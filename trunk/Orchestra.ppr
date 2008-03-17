@@ -1,0 +1,69 @@
+[Config]
+Relative path=1
+Compilator.DefaultDir=C:\@fabrice\Armadeus\Python\Orchestra
+Compilator.SaveAll=0
+Compilator.Capture=0
+Compilator.HideOutput=0
+Compilator.LogType=0
+DefaultDir=C:\@fabrice\Armadeus\Python\Orchestra
+DefaultCPIndex=7
+LogtoEnd=1
+DontOpen=0
+FileFormat=1
+[Project tree]
+Orchestra
+	+programme
+		orchestra.py
+	-Exemples
+		temp\imx_wrapper.vhd
+		temp\imx_wrapper.xml
+		temp\irq_mngr.xml
+	-Licence
+		bsd.txt
+		gpl.txt
+		lgpl.txt
+	+OrchestraLib
+		+core
+			orchestralib\core\__init__.py
+			orchestralib\core\cli.py
+			orchestralib\core\orchestracli.py
+			orchestralib\core\xml.py
+		+thirdparty
+			orchestralib\thirdparty\__init__.py
+			orchestralib\thirdparty\cmd2.py
+			orchestralib\thirdparty\ElementPath.py
+			orchestralib\thirdparty\ElementTree.py
+			orchestralib\thirdparty\flagReader.py
+			orchestralib\thirdparty\pyparsing.py
+		+components
+			orchestralib\components\__init__.py
+			orchestralib\components\cli.py
+			orchestralib\components\components.py
+		+vhdl
+			orchestralib\vhdl\__init__.py
+			orchestralib\vhdl\entity.py
+		orchestralib\__init__.py
+[Open project files]
+0=orchestralib\core\orchestracli.py
+1=orchestralib\core\__init__.py
+2=orchestralib\components\components.py
+3=orchestralib\vhdl\entity.py
+4=orchestralib\components\cli.py
+[Selected Project Files]
+Main=
+Selected=orchestralib\components\cli.py
+[orchestralib\core\orchestracli.py]
+TopLine=4
+Caret=1,42
+[orchestralib\core\__init__.py]
+TopLine=1
+Caret=1,4
+[orchestralib\components\components.py]
+TopLine=1
+Caret=23,31
+[orchestralib\vhdl\entity.py]
+TopLine=1
+Caret=1,1
+[orchestralib\components\cli.py]
+TopLine=1
+Caret=91,34

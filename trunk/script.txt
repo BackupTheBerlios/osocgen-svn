@@ -1,0 +1,10 @@
+# dvdegvzdfgzdfzedde
+components.create name=toto
+#components.hdl.add name=temp/syscon.vhd -istop
+components.hdl.add name=temp/imx_wrapper.vhd -istop
+#components.xml
+#components.hdl.del imx_wrapper.vhd
+#components.xml
+#components.hdl.add name=temp/imx_wrapper.vhd
+components.xml
+components.save name=bob --force

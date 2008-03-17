@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="irq_mngr" version="1.0" category="base">
+  <description>
+      The Interruption Manager is a Wishbone slave component and Armadeus compiliant.
+  </description>
+
+  <!--
+    HDL_FILE node is used to define all VHDL or Verilog files used by this IP
+
+    Here are the recognised attributs for each file:
+      - 'name' : the HLD file name (*.vhd for VHDL, *.v for Verilog)
+      - 'scope' : to give HDL file usage:
+                   - 'all' : file allways used (default)
+                   - 'xilinx' : file only for Xilinx FPGA / CPLD
+                   - 'altera' : file only for Altera FPGA / CPLD
+                   - 'tb' : file only for testbench
+      - 'istop' : 1 or 0 (default), only one file can be the top file !!
+  -->
+  <hdl_files>
+    <hdl_file name="irq_mgnr.vhd" scope="all" istop="1" /> <!-- This is the TOP file of the IP -->
+  </hdl_files>
+
+  <!--
+    GENERICS node is only present if Top HDL file is written in VHDL.
+    Verilog don't have generic so we need to use a configuration file.
+    A this time there is no Verilog specialist available so it will be
+    specified later when it will be needed.
+
+    Here are the recognised attributs for each generic:
+      - 'name' : the name of the generic (must match with top file contents)
+      - 'type' : type of VHDL parameter, at this time the allowed values are:
+                  - 'interger'
+                  - 'std_logic'
+                  - 'std_logic_vector'
+      - 'value' : the default value for this generic
+      - 'valid' : the allowed values, e.g.:
+                   - 1..16 => from 1 to 16 (inclusive)
+                   - 8|16|32 => 8 or 16 ou 32
+                   - 1..16|32 => from 1 to 16 or 32
+                   - etc.
+  -->
+  <generics>
+    <generic name="irq_count" type="integer" value="16" valid="1..16">
+      <![CDATA[
+        irq_count gives the maximum allowed interruption sources.
+      ]]>
+    </generic>
+    <generic name="irq_level" type="std_logic" value="1" valid="0|1">
+      <![CDATA[
+        irq_level gives the irq output signal active level.
+      ]]>
+    </generic>
+  </generics>
+
+  <!--
+    REGISTERS node is used to specify all internal registers :
+     - 'name'   : register name
+     - 'offset' : register base address, allways in bytes
+     - 'width'  : register width
+  -->
+  <registers>
+    <register name="isr_mask" offset="0x0000" width="16" />
+    <register name="isr_pend" offset="0x0002" width="16">
+This register is used for different purpose:
+ - on read, it gives the interruption requests
+ - on write, each bit at '1' will acknowledge the corresponding interruption request
+    </register>
+  </registers>
+
+  <!--
+    INTERFACES node is used to specify all Wishbone interfaces proposed by this
+    component/IP
+  -->
+  <interfaces>
+    <interface name="wbs_s1" type="slave" /> <!-- type can be slave or master -->
+  </interfaces>
+
+  <!--
+    PORTS node is used to specify all inputs and outputs proposed by this component/IP
+  -->
+  <ports>
+    <port name="gls_clk"    interface="global" type="CLK_I" />
+    <port name="gls_reset"  interface="global" type="RST_I" />
+
+    <port name="wbs_s1_address"   interface="wbs_s1" type="ADR_I" />
+    <port name="wbs_s1_readdata"  interface="wbs_s1" type="DAT_O" />
+    <port name="wbs_s1_writedata" interface="wbs_s1" type="DAT_I" />
+    <port name="wbs_s1_ack"       interface="wbs_s1" type="ACK_O" />
+    <port name="wbs_s1_strobe"    interface="wbs_s1" type="STB_I" />
+    <port name="wbs_s1_write"     interface="wbs_s1" type="WE_I"  />
+    <port name="wbs_s1_irq"       interface="wbs_s1" type="out"   />
+
+    <port name="gls_irq" interface="global" type="in" />
+  </ports>
+</component>
