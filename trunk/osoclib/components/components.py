@@ -247,7 +247,7 @@ class Component(XmlFileBase):
         # parsing interfaces to extract clock and reset signals
         for (key,value) in interfaces.items():
             if key.upper() in clocks:
-                self.interfaces.add(text=None, name=key)
+                self.interfaces.add(text=None, name=key, type=value[0])
             else:
                 clock = None
                 if len(clocks) == 1:
@@ -257,7 +257,7 @@ class Component(XmlFileBase):
                         if clk.startswith(key.upper()):
                             clock = clk
                 
-                self.interfaces.add(text=None, name=key, clockandreset=clock)
+                self.interfaces.add(text=None, name=key, type=value[0], clockandreset=clock)
     
     def addHdl(self, filename, scope="all", order=0, istop=0):
         """Append new HDL file to component.
