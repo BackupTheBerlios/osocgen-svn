@@ -215,7 +215,7 @@ class ComponentsCli(BaseCli):
             settings.active_component.filename = name
             
         settings.active_component.save(archive)
-        self.write("Component saved as '%s'" % name)
+        self.write("Component saved as '%s'\n" % name)
 
     def do_version(self, arg):
         """\nDisplay or modify current component version.
