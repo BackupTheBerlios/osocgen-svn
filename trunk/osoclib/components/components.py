@@ -49,7 +49,7 @@ WB_SIGNALS = {
     "SEL" : "SEL",
     "ACK" : "ACK",
     "CYC" : "CYC", "CYCLE" : "CYC",
-    "STB" : "STB"
+    "STB" : "STB", "STROBE" : "STB"
 }
 
 # WB_SIGNALS define wishbone interfaces type and corresponding signal with direction
@@ -71,11 +71,11 @@ COMPONENTS_NODES = {
 }
 
 def getSignalAttributs(signal):
-    """Extract signal informations. The signal name must match folowing maning convention:
+    """Extract signal informations. The signal name must match folowing naming convention:
     
     type_name_signal
   
-        type = Wishbone interface type. Default = Global (GLS).
+        type = Wishbone interface type. Default = Global/Export (GLS).
         name = Interface name. Default = default.
         signal = Signal name.
                 
