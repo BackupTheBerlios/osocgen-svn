@@ -1,7 +1,7 @@
 #! /usr/bin/python
 # -*- coding: utf-8 -*-
 #-----------------------------------------------------------------------------
-# Name:     Components.py
+# Name:     cli.py
 # Purpose:  Basic Command Line Interface for Orchestra elements
 #
 # Author:   Fabrice MOUSSET
