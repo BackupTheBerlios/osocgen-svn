@@ -24,6 +24,13 @@ __author__ = "Fabrice MOUSSET <fabrice.mousset@laposte.net>"
 __license__ = "GPL"
 __copyright__ = "Copyright 2008 Fabrice MOUSSET"
 
+if __name__ == "__main__":
+    import os.path as dir
+    import sys
+
+    dirname, base = dir.split(dir.dirname(dir.realpath(__file__)))
+    sys.path.append(dirname)
+
 import os
 import re
 import sys
@@ -78,7 +85,10 @@ class Entity:
 
     __entityIdent = __identifier.setResultsName("entityId")
     __mode = oneOf("IN OUT INOUT BUFFER LINKAGE", caseless=True)
-    __expression = Combine((__integer | __identifier) + Optional(__arithOp + (__integer | __identifier)))
+    __exp_operand = __integer | __identifier 
+#    __expression = Forward()
+#    __expression << 
+    __expression = Combine(__exp_operand + Optional(__arithOp + __exp_operand))
     __staticExpression = __integer | __identifier | __hexaValue | __vectorValue | __bitValue
     __subtypeIndication = Group(__identifier + Optional(__LPAR + __expression + oneOf("TO DOWNTO", caseless=True) + __expression + __RPAR))
     __portDecl = Group(__identifier + __COLON + __mode + __subtypeIndication)
@@ -272,11 +282,11 @@ def main():
     """
     Main function, deals with arguments and launch program
     """
-    entity = Entity(filename='imx_wrapper.vhd')
+    entity = Entity(filename='../../temp/imx_wrapper.vhd')
     print entity
     print "Les generics :"
     print entity.getGenerics()
-    entity = Entity(filename='irq_mngr.vhd')
+    entity = Entity(filename='../../temp/irq_mngr.vhd')
     print entity
     print entity.getGenerics()
 
