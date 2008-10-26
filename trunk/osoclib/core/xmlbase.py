@@ -36,7 +36,7 @@ if __name__ == "__main__":
 import thirdparty.ElementTree as ET
 
 def XMLBeautifier(xml_data):
-    """This function make XML output looks better and more readable.
+    """This function make XML output looks better and more humman readable.
     """
     xml_text = ""
     xml_ident = 0
@@ -57,12 +57,19 @@ def XMLBeautifier(xml_data):
 
 class ItemBase(object):
     """ This class should help working with elements stored in XML files.
-        Eac
+        
+        Direct acces to each attribut is possible via dictionary or as object attribut.
+        Attribut names are caseless.
+        
+        Attributes:
+            tag           Node description
+            valid_keys    Valid attributes
     """
 
-    def __init__(self, tag, valid_keys):
+    def __init__(self, tag, valid_keys=None):
         self.__dict__["__text"] = tag
         self.__dict__["__valid_keys"] = valid_keys
+        self.__dict__["__sub_nodes"] = {}
 
     def setKeys(self, valid_keys):
         self.__dict__["__valid_keys"] = valid_keys
@@ -75,14 +82,30 @@ class ItemBase(object):
             else:
                 pass
 
+    def setSubNodes(self, sub_nodes):
+        self.__dict__["__sub_nodes"] = sub_nodes
+        
+    def getSubNodes(self, sub_nodes):
+        return self.__dict__["__sub_nodes"]
+    
+    def getSubNode(self, node_name):
+        sub_nodes = self.__dict__["__sub_nodes"]
+        if sub_nodes.has_attribute(node_name):
+            return sub_node[node_name]
+        return None
+
+    # __getattribute__ is called for each class attribute access.
     def __getattribute__(self, name):
         try:
             return object.__getattribute__(self, name)
         except:
             return None
 
+    # __getattr__ is called only for attributs that can't be found.
     def __getattr__(self, name):
         name = str(name).lower()
+        
+        # No direct access to private membres ;-)
         if name.startswith('_'):
             return None
 
@@ -93,6 +116,8 @@ class ItemBase(object):
 
     def __setattr__(self, name, value):
         keys = self.__dict__["__valid_keys"]
+
+        # No direct access to private membres ;-)
         if name.startswith('_'):
             return
 
@@ -101,6 +126,7 @@ class ItemBase(object):
         elif name in keys:
             self.__dict__[name] = value
 
+    # We don't want to remove attributes
     def __delattr__(self, name):
         pass
 
@@ -127,12 +153,23 @@ class ItemBase(object):
         return xml_node
 
 class NodeBase(object):
+    """ This class should help working with elements stored in XML files.
+        Direct acces to each attribut is possible via dictionary or as object attribut.
+        Attribut names are caseless.
+        
+        Attributes:
+            node_name    Node base name, subnodes
+            valid_keys   Valid attributes
+            sub_nodes    Sub-nodes names and attributes
+    """
+
     def __init__(self, node_name, valid_keys=(), default_key=None):
         self._valid_keys = valid_keys
         self._default_key = default_key
         self._data = []
         self.__index = 0
         self._node_name = node_name
+        self._sub_nodes = None
 
     def __getitem__(self, idx):
         if isinstance( idx, (int,slice) ):
@@ -214,6 +251,9 @@ class NodeBase(object):
         self._data = []
         self.__index = 0
 
+    def setSubNobes(self, sub_nodes):
+        self._sub_nodes = sub_nodes
+        
     def asXMLTree(self, parent=None):
         # Creation section node
         if(parent is None):
@@ -227,20 +267,35 @@ class NodeBase(object):
 
         return xml_tree
 
+def createNode(node_name, attribs, xml_root, subnodes=None):
+    """This routine creates nodes/attributes with initialization.
+    
+        Attributes:
+         * node_name: XLM base node name
+         * attribs:   Node valid attributes name
+         * xml_root:  XML initialization datas
+         * subnodes:  Sub elements
+    """
+    node = NodeBase(node_name[:-1], attribs, subnodes)
+    if xml_root is not None:
+        xml_nodes = xml_root.find(node_name)
+        if xml_nodes is not None:
+            for el in xml_nodes:
+                node.add(el.text, el.attrib)
+
+    return node
+
 class XmlFileBase(object):
+    """This class will help to managed each XML files used for Orchestra project.
+        
+        Attributes:
+            nodes:    dictionnary which describe each nodes and sub-nodes
+            attribs:  base node attributes
+            filename: XML file name, used to initialise the class members
+            xml_data: XML string, used to initialise the class members
+    """
     description = None
     xml_basename = "filebase"
-
-    def __create_node(self, node_name, attribs, xml_root):
-        node = NodeBase(node_name[:-1], attribs)
-        if xml_root is not None:
-            nodes = xml_root.find(node_name)
-            if nodes is not None:
-                for el in nodes:
-                    node.add(el.text, el.attrib)
-
-        self.__dict__[node_name] = node
-
 
     def __init__(self, nodes, attribs, filename=None, xml_data=None):
 
@@ -268,8 +323,16 @@ class XmlFileBase(object):
             except:
                 xml_root = None
 
-        for (name,attrib) in nodes.iteritems():
-            self.__create_node(name, attrib, xml_root)
+        for (node_name, node_attrib) in nodes.iteritems():
+            if(isinstance(node_attrib, dict)):
+                if node_attrib.has_attribute("subnodes"):
+                    node = create_node(node_name, node_attrib["attribs"], xml_root, node_attrib["subnodes"],)
+                else:
+                    node = create_node(node_name, node_attrib["attribs"], xml_root)
+            else:
+                node = create_node(node_name, node_attrib, xml_root)
+                
+            self.__dict__[node_name] = node
 
         if xml_root is not None:
             el = xml_root.getroot()
