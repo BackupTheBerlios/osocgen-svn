@@ -23,6 +23,7 @@ __author__ = "Fabrice MOUSSET <fabrice.mousset@laposte.net>"
 import sys
 import os.path as dir
 import os
+
 if not hasattr(sys, "frozen"):
     dirname = dir.join(dir.dirname(dir.realpath(__file__)),"osoclib")
     sys.path.append(dirname)

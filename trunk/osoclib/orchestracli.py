@@ -35,6 +35,7 @@ if __name__ == "__main__":
 
 from core import BaseCli
 from components import ComponentsCli
+from projects import ProjectsCli
 
 class OrchestraCli(BaseCli):
     intro = """
@@ -43,14 +44,32 @@ class OrchestraCli(BaseCli):
 """
 
     def do_components(self, arg):
-        """components [arg] : Orchestra Ready Components managment commands.
+        """components [arg] : Orchestra Ready Components management commands.
 
-        no arg -> launch Components managment shell.
-        arg    -> execture [arg] component command.
+        no arg -> launch Components management shell.
+        arg    -> execute [arg] component command.
         """
 
         cli = ComponentsCli(self)
         cli.setPrompt("components")
+        arg = str(arg)
+        if len(arg) > 0:
+            line = cli.precmd(arg)
+            cli.onecmd(line)
+            cli.postcmd(True, line)
+        else:
+            cli.cmdloop()
+            self.stdout.write("\n")
+
+    def do_projects(self, arg):
+        """projects [arg] : Orchestra Projects management commands.
+
+        no arg -> launch Project management shell.
+        arg    -> execute [arg] project command.
+        """
+
+        cli = ProjectsCli(self)
+        cli.setPrompt("projects")
         arg = str(arg)
         if len(arg) > 0:
             line = cli.precmd(arg)

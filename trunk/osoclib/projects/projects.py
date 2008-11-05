@@ -57,7 +57,7 @@ PROJECTS_ATTRIBS = {"name":"", "version":"", "author":"", "board" :""}
 class ProjectError(Exception):
     """Exception raised when errors detected during project management.
 
-    Attributs:
+    Attributes:
         message -- textual explanation of the error
     """
 
@@ -70,7 +70,7 @@ class ProjectError(Exception):
         return self.message
 
 class Project(XmlFileBase):
-    """Projects managment class.
+    """Projects management class.
 
     Attributes:
         filename -- Name of file which describe the project

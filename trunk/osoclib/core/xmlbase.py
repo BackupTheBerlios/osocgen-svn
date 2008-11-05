@@ -152,6 +152,28 @@ class ItemBase(object):
 
         return xml_node
 
+def create_node(node_name, attribs, xml_root, subnodes=None):
+    """This routine creates nodes/attributes with initialization.
+    
+        Attributes:
+         * node_name: XLM base node name
+         * attribs:   Node valid attributes name
+         * xml_root:  XML initialization datas
+         * subnodes:  Sub elements
+    """
+    node = NodeBase(node_name[:-1], attribs)
+    
+    if subnodes is not None:
+        node.setSubNobes(subnodes)
+        
+    if xml_root is not None:
+        xml_nodes = xml_root.find(node_name)
+        if xml_nodes is not None:
+            for el in xml_nodes:
+                node.add(el.text, el.attrib)
+
+    return node
+
 class NodeBase(object):
     """ This class should help working with elements stored in XML files.
         Direct acces to each attribut is possible via dictionary or as object attribut.
@@ -172,15 +194,10 @@ class NodeBase(object):
         self._sub_nodes = None
 
     def __getitem__(self, idx):
-        if isinstance( idx, (int,slice) ):
-            return sef._data[index]
-
         index = self.__getIndexOf(idx)
         if index < 0:
             return ItemBase()
-        return sef._data[index]
-
-        return self._data[index]
+        return sef._data[index][0]
 
     def __setitem__(self, idx, value):
         index = self.__getIndexOf(idx)
@@ -198,7 +215,8 @@ class NodeBase(object):
             return item in self._data
         else:
             retval = False
-            for data in self._data:
+            for element in self._data:
+                data = element[0]
                 retval = retval or (item == data[self._default_key])
             return retval
 
@@ -213,14 +231,14 @@ class NodeBase(object):
         try:
             data = self._data[self.__index]
             self.__index += 1
-            return data
+            return data[0]
         except:
             raise StopIteration
 
     def __getIndexOf(self, item):
         # Scan _data collection and search match with element name
         for data in self._data:
-            if data.isItem(item):
+            if data[0].isItem(item):
                 return self._data.index(data)
 
         # Verify if item is an integer
@@ -234,16 +252,25 @@ class NodeBase(object):
         attrib.update(extra)
         item = ItemBase(text, self._valid_keys)
         item.setAttributs(attrib)
-        self._data.append(item)
+
+        sub_nodes = {}
+        if self._sub_nodes is not None:
+            for (node_name, node_attrib) in self._sub_nodes.iteritems():
+                if(isinstance(node_attrib, dict)):
+                    if node_attrib.has_key("subnodes"):
+                        node = create_node(node_name, node_attrib["attribs"], None, node_attrib["subnodes"],)
+                    else:
+                        node = create_node(node_name, node_attrib["attribs"], None)
+                else:
+                    node = create_node(node_name, node_attrib, None)
+                
+                sub_nodes[node_name] = node
+        
+        element = item, sub_nodes        
+        self._data.append(element)
 
     def remove(self, item):
-        if isinstance(item, ItemBase):
-            try:
-                idx = self._data.index(item)
-            except:
-                idx = -1
-        else:
-            idx = self.__getIndexOf(item)
+        idx = self.__getIndexOf(item)
         if idx >= 0:
             del self._data[idx]
 
@@ -262,28 +289,13 @@ class NodeBase(object):
             xml_tree = ET.SubElement(parent, self._node_name+'s')
 
         # Append childrens to section node
-        for data in self._data:
-            data.asXMLTree(xml_tree, self._node_name)
+        for (item, sub_nodes) in self._data:
+            data = item.asXMLTree(xml_tree, self._node_name)
+            # Append sub-nodes to XML Tree
+            for (sub_node_name, sub_node_element) in sub_nodes.iteritems():
+                sub_node_element.asXMLTree(data)
 
         return xml_tree
-
-def createNode(node_name, attribs, xml_root, subnodes=None):
-    """This routine creates nodes/attributes with initialization.
-    
-        Attributes:
-         * node_name: XLM base node name
-         * attribs:   Node valid attributes name
-         * xml_root:  XML initialization datas
-         * subnodes:  Sub elements
-    """
-    node = NodeBase(node_name[:-1], attribs, subnodes)
-    if xml_root is not None:
-        xml_nodes = xml_root.find(node_name)
-        if xml_nodes is not None:
-            for el in xml_nodes:
-                node.add(el.text, el.attrib)
-
-    return node
 
 class XmlFileBase(object):
     """This class will help to managed each XML files used for Orchestra project.
@@ -325,7 +337,7 @@ class XmlFileBase(object):
 
         for (node_name, node_attrib) in nodes.iteritems():
             if(isinstance(node_attrib, dict)):
-                if node_attrib.has_attribute("subnodes"):
+                if node_attrib.has_key("subnodes"):
                     node = create_node(node_name, node_attrib["attribs"], xml_root, node_attrib["subnodes"],)
                 else:
                     node = create_node(node_name, node_attrib["attribs"], xml_root)

@@ -35,11 +35,11 @@ from projects import *
 from components import *
 
 FILE_ARGS = ArgsSet(name=None, force=False)
-
-
 COMPONENT_ARGS = ArgsSet(name=None, base=None)
 CREATION_ARGS = ArgsSet(name="New Project", version="1.0", author="", board="apf9328", description=None)
 EDITION_ARGS = ArgsSet(name=None, version=None, author=None, board=None, description=None)
+INSTANCE_ARGS = ArgsSet(name=None)
+CLOCK_ARGS = ArgsSet(name=None, frequency=50000000, type="static")
 
 settings = Settings()
 
@@ -65,45 +65,35 @@ class ProjectCompoentCli(BaseCli):
 
 
     def do_del(self, arg):
-        """\nRemove HDL file from current component.
+        """\nRemove component instance from current project.
 
         del <string>
 
-            <string> is hdl file name to remove.
+            <string> is instance name to remove.
         """
 
         name = arg
         try:
-            name = FILE_ARGS.parse(arg).name
+            name = INSTANCE_ARGS.parse(arg).name
         except:
             pass
             
         if name:
             try:
-                settings.active_component.removeHdl(name)
-            except ComponentError, e:
+                settings.active_project.removeComponent(name)
+            except ProjectError, e:
                 self.write(e.message)
             else:
-                self.write("HDL file '%s' successfully removed.\n" % name)
+                self.write("Instance '%s' successfully removed.\n" % name)
         else:
-            self.write("*** Argument error, file deletion canceled.\n")
+            self.write("*** Argument error, instance deletion canceled.\n")
 
     def do_list(self, arg):
-        """\nDisplay HDL files from current component.
+        """\nDisplay instances from current project.
         """
         for file in settings.active_component.hdl_files:
             self.write("Name : %s, scope : %s, order : %d, istop : %d\n" % (file.name, file.scope, file.order, file.istop))
 
-    def do_order(self, arg):
-        """\nDefine HDL files load order.
-        """
-        pass
-
-    def do_top(self, arg):
-        """\nSelect current component hdl top file.
-        """
-        pass
-    
 class ProjectsCli(BaseCli):
     def do_xml(self, arg):
         """\nDisplay XML description from current project or from specified project.
