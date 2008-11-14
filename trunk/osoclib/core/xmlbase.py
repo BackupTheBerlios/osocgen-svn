@@ -113,7 +113,7 @@ class ItemBase(object):
     def __init__(self, tag, valid_keys=None):
         self.__dict__["__text"] = tag
         self.__dict__["__valid_keys"] = valid_keys
-        self.__dict__["__sub_nodes"] = {}
+#        self.__dict__["__sub_nodes"] = {}
 
     def setKeys(self, valid_keys):
         self.__dict__["__valid_keys"] = valid_keys
@@ -126,18 +126,6 @@ class ItemBase(object):
             else:
                 pass
 
-    def setSubNodes(self, sub_nodes):
-        self.__dict__["__sub_nodes"] = sub_nodes
-        
-    def getSubNodes(self, sub_nodes):
-        return self.__dict__["__sub_nodes"]
-    
-    def getSubNode(self, node_name):
-        sub_nodes = self.__dict__["__sub_nodes"]
-        if sub_nodes.has_attribute(node_name):
-            return sub_node[node_name]
-        return None
-
     # __getattribute__ is called for each class attribute access.
     def __getattribute__(self, name):
         try:
@@ -145,11 +133,11 @@ class ItemBase(object):
         except:
             return None
 
-    # __getattr__ is called only for attributs that can't be found.
+    # __getattr__ is called only for attributes that can't be found.
     def __getattr__(self, name):
         name = str(name).lower()
         
-        # No direct access to private membres ;-)
+        # No direct access to private members ;-)
         if name.startswith('_'):
             return None
 
@@ -161,7 +149,7 @@ class ItemBase(object):
     def __setattr__(self, name, value):
         keys = self.__dict__["__valid_keys"]
 
-        # No direct access to private membres ;-)
+        # No direct access to private members ;-)
         if name.startswith('_'):
             return
 
@@ -181,7 +169,12 @@ class ItemBase(object):
         self.__dict__["__text"] = value
 
     def isItem(self, item):
-        return item == self.__dict__["__text"]
+        if isinstance(item, basestring):
+            if self.__dict__.has_key("name"):
+                return item.lower() == self.__dict__["name"].lower()
+            return item.lower() == self.__dict__["__text"].lower()
+        
+        return item == self
 
     def asXMLTree(self, parent, node_name):
         if(parent is None):
@@ -297,7 +290,13 @@ class NodeBase(object):
         idx = self.__getIndexOf(item)
         if idx >= 0:
             del self._data[idx]
+            return True
+        
+        return False
 
+    def has_element(self, item):
+        return self.__getIndexOf(item) >= 0
+    
     def clear(self):
         self._data = []
         self.__index = 0
