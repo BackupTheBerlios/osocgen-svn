@@ -55,6 +55,50 @@ def XMLBeautifier(xml_data):
 
     return xml_text
 
+def initialize_node(node, node_name, xml_root, subnodes=None):
+    """This routine creates nodes/attributes with initialization.
+    
+        Attributes:
+         * node:      Data node
+         * node_name: XLM base node name
+         * xml_root:  XML initialization datas
+         * subnodes:  Sub elements
+    """
+
+    if xml_root is not None:
+        xml_nodes = xml_root.find(node_name)
+        if xml_nodes is not None:
+            for el in xml_nodes:
+                subelement = node.add(el.text, el.attrib)
+
+                if subnodes is not None:
+                    for (subnode_name, subnode_attrib) in subnodes.iteritems():
+                        if(isinstance(subnode_attrib, dict)):
+                            if subnode_attrib.has_key("subnodes"):
+                                initialize_node(subelement, subnode_name, el, subnode_attrib["subnodes"])
+                            else:
+                                initialize_node(subelement, subnode_name, el, None)
+                        else:
+                            initialize_node(subelement, subnode_name, el, None)
+    
+    return node
+
+def create_node(node_name, attribs, xml_root, subnodes=None):
+    """This routine creates nodes/attributes with initialization.
+    
+        Attributes:
+         * node_name: XLM base node name
+         * attribs:   Node valid attributes name
+         * xml_root:  XML initialization datas
+         * subnodes:  Sub elements
+    """
+    node = NodeBase(node_name[:-1], attribs)
+    
+    if subnodes is not None:
+        node.setSubNobes(subnodes)
+
+    return initialize_node(node, node_name, xml_root, subnodes)
+
 class ItemBase(object):
     """ This class should help working with elements stored in XML files.
         
@@ -152,28 +196,6 @@ class ItemBase(object):
 
         return xml_node
 
-def create_node(node_name, attribs, xml_root, subnodes=None):
-    """This routine creates nodes/attributes with initialization.
-    
-        Attributes:
-         * node_name: XLM base node name
-         * attribs:   Node valid attributes name
-         * xml_root:  XML initialization datas
-         * subnodes:  Sub elements
-    """
-    node = NodeBase(node_name[:-1], attribs)
-    
-    if subnodes is not None:
-        node.setSubNobes(subnodes)
-        
-    if xml_root is not None:
-        xml_nodes = xml_root.find(node_name)
-        if xml_nodes is not None:
-            for el in xml_nodes:
-                node.add(el.text, el.attrib)
-
-    return node
-
 class NodeBase(object):
     """ This class should help working with elements stored in XML files.
         Direct acces to each attribut is possible via dictionary or as object attribut.
@@ -268,6 +290,8 @@ class NodeBase(object):
         
         element = item, sub_nodes        
         self._data.append(element)
+        
+        return element
 
     def remove(self, item):
         idx = self.__getIndexOf(item)
