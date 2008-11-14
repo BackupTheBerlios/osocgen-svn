@@ -39,16 +39,18 @@ from vhdl import Entity
 from StringIO import StringIO
 import string
 
-# PROJECTS_NODES define Project XML file sections and attributs
+# PROJECTS_COMPONENTS_NODES define Project XML file sub-sections and attributes
+# for component section.
 PROJECTS_COMPONENTS_NODES = {
     "generics"      : ("name", "value"),
     "interfaces"    : ("name", "offset", "link")
 }
 
+# PROJECTS_NODED define Project XML file section and attributes
 PROJECTS_NODES = {
     "routes"        : ("name", "type"),
     "clocks"        : ("name", "frequency", "type"),
-    "components"    : {"subnodes" : PROJECTS_COMPONENTS_NODES, "attribs" : ("name", "base") }
+    "components"    : {"subnodes" : PROJECTS_COMPONENTS_NODES, "attribs" : ("name", "base", "version") }
 }
 
 # PROJECTS_ATTRIBS define XML base node attributes
@@ -98,6 +100,27 @@ class Project(XmlFileBase):
     def addClock(self, name, frequency, type):
         pass
     
-    def addComponent(self):
-        pass
+    def addComponent(self, name, component):
+        """Add new component to current project
+        
+        Attributes
+            name - the component instance name
+            component - the component to be added
+        """
+        
+        # Check if there is no component instance with the same name
+        for cp in self.components:
+            if cp.name == name:
+                raise ProjectError("*** Component called '%s' already exist in current project, component addition canceled.\n" % name)
     
+        # Add component instance to current project and retrieve component details
+        (instance, properties) = self.components.add(None, name = name, base = component.name, version = component.version)
+
+        # Add generic parameters to this instance
+        for generic in component.generics:
+            properties["generics"].add(None, name=generic.name, value=generic.value)
+            
+        # Add interfaces to this instance
+        for interface in component.interfaces:
+            properties["interfaces"].add(None, name=interface.name, offset="")
+        
