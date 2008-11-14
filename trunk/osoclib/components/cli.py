@@ -271,7 +271,7 @@ class ComponentsCli(BaseCli):
     def do_hdl(self, arg):
         """\nhdl [arg] : component HDL files manipulation commands.
 
-        no arg -> launch Components HDL files managment shell.
+        no arg -> launch Components HDL files management shell.
         arg    -> execture [arg] HDL files command.
         """
 
@@ -293,7 +293,7 @@ class ComponentsCli(BaseCli):
     def do_driver(self, arg):
         """\ndriver [arg] : component software driver files manipulation commands.
 
-        no arg -> launch Components Driver files managment shell.
+        no arg -> launch Components Driver files management shell.
         arg    -> execture [arg] Driver command.
         """
 
@@ -302,7 +302,7 @@ class ComponentsCli(BaseCli):
     def do_register(self, arg):
         """\nregister [arg] : component registers manipulation commands.
 
-        no arg -> launch Components Registers managment shell.
+        no arg -> launch Components Registers management shell.
         arg    -> execture [arg] Register command.
         """
 
@@ -311,7 +311,7 @@ class ComponentsCli(BaseCli):
     def do_interface(self, arg):
         """\ninterface [arg] : component Wihsbone Interfaces manipulation commands.
 
-        no arg -> launch Components Wihsbone Interfaces managment shell.
+        no arg -> launch Components Wihsbone Interfaces management shell.
         arg    -> execture [arg] Interface command.
         """
 
