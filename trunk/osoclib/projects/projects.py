@@ -97,11 +97,17 @@ class Project(XmlFileBase):
     def addRoute(self, name, type):
         pass
     
+    def removeRoute(self, name):
+        pass
+    
     def addClock(self, name, frequency, type):
+        pass
+
+    def removeClock(self, name):
         pass
     
     def addComponent(self, name, component):
-        """Add new component to current project
+        """Add new component to project
         
         Attributes
             name - the component instance name
@@ -123,4 +129,12 @@ class Project(XmlFileBase):
         # Add interfaces to this instance
         for interface in component.interfaces:
             properties["interfaces"].add(None, name=interface.name, offset="")
+            
+    def removeComponent(self, name):
+        """Remove a component instance from project
         
+        Attributes
+            name - the component instance name
+        """
+        if not self.components.remove(name):
+            raise ProjectError("*** No component called '%s' exist in current project, component deletion canceled.\n" % name)

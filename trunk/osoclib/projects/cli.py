@@ -65,17 +65,8 @@ class ProjectComponentCli(BaseCli):
         args = COMPONENT_ARGS.parse(arg)
         if args:
             try:
-                comp_dir = settings.components_dir
-                cp = None
-                for file in os.listdir(comp_dir):
-                    name = dir.join(comp_dir, file)
-                    if(dir.isfile(name)):
-                        cp = Component(name)
-                        if cp.name == args.base:
-                            break
-                    else:
-                        cp = None
-                
+                cp = getMatchingComponent(settings.components_dir, args.base)
+
                 if cp is None:
                     self.write("*** No component '%s' found, component addition canceled\n" % args.base)
                 else:
@@ -83,7 +74,7 @@ class ProjectComponentCli(BaseCli):
             except ProjectError, e:
                 self.write(e.message)
             else:
-                self.write("Component '%s' successfully added as '%s'.\n" % (dir.basename(args.name), args.base))
+                self.write("Component '%s' successfully added as '%s'.\n" % (args.base, dir.basename(args.name)))
         else:
             self.write("*** Arguments extraction error, component addition canceled.\n")
 
@@ -111,12 +102,6 @@ class ProjectComponentCli(BaseCli):
                 self.write("Instance '%s' successfully removed.\n" % name)
         else:
             self.write("*** Argument error, instance deletion canceled.\n")
-
-    def do_list2(self, arg):
-        """\nDisplay instances from current project.
-        """
-        for file in settings.active_component.hdl_files:
-            self.write("Name : %s, scope : %s, order : %d, istop : %d\n" % (file.name, file.scope, file.order, file.istop))
 
 class ProjectsCli(BaseCli):
     def do_xml(self, arg):
@@ -263,13 +248,13 @@ class ProjectsCli(BaseCli):
         else:
             self.write("*** No open project.\n")
 
-    def do_component(self, arg):
-        """\nComponent manipulation commands.
+    def do_components(self, arg):
+        """\nComponents manipulation commands.
         
-        component [arg]
+        components [arg]
 
-            no arg -> launch Components HDL files management shell.
-            arg    -> execture [arg] HDL files command.
+            no arg -> launch project components management shell.
+            arg    -> execute [arg] component command.
         """
 
         if not settings.active_project:
@@ -277,7 +262,7 @@ class ProjectsCli(BaseCli):
             return
 
         cli = ProjectComponentCli(self)
-        cli.setPrompt("component")
+        cli.setPrompt("components")
         arg = str(arg)
         if len(arg) > 0:
             line = cli.precmd(arg)
@@ -288,7 +273,9 @@ class ProjectsCli(BaseCli):
             self.stdout.write("\n")
 
     def do_route(self, arg):
-        """\ndriver [arg] : component software driver files manipulation commands.
+        """\n
+        
+        driver [arg] : component software driver files manipulation commands.
 
             no arg -> launch Components Driver files management shell.
             arg    -> execture [arg] Driver command.
