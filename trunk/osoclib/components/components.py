@@ -70,8 +70,25 @@ COMPONENTS_NODES = {
     "interfaces"    : ("name", "type", "clockandreset")
 }
 
+def getMatchingComponent(basedir, name):
+    """Find component based on his name
+    
+    Attributes:
+        basedir - components directory
+        name - component to find
+    """
+    if isinstance(basedir, basestring) and isinstance(name, basestring):
+        for file in os.listdir(basedir):
+            filename = dir.join(basedir, file)
+            if(dir.isfile(filename)):
+                cp = Component(filename)
+                if cp.name.lower() == name.lower():
+                    return cp
+    
+    return None
+
 def getSignalAttributs(signal):
-    """Extract signal informations. The signal name must match folowing naming convention:
+    """Extract signal informations. The signal name must match following naming convention:
     
     type_name_signal
   
