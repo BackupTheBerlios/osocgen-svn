@@ -39,7 +39,7 @@ from optparse import OptionParser
 from thirdparty.pyparsing import *
 
 class Entity:
-    """  VHDL entity parser class.
+    """VHDL entity parser class.
 
     entity_declaration ::=
         ENTITY <identifier> IS
@@ -262,21 +262,6 @@ class Entity:
             for port in self._entity.port:
                 ports.append(port[0])
         return ports
-
-class Instance:
-    """VHDL entity instance class.
-
-    This class make the link between an ENTITY declaration and the parameters
-    for a instance of this ENTITY to build a new IP.
-    """
-
-    def __init__(self, parent, name=None):
-        self._parent = parent
-        self._entity = parent._entity
-        self.name = name
-        self.ports = {}
-        for port in parent._entity.port:
-            self.ports[port[0]] = None
 
 def main():
     """
