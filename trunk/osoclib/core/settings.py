@@ -52,6 +52,7 @@ class Settings(object):
             self.__script_dir = os.path.abspath(pathname)
             self.active_project = None
             self.active_component = None
+            self.project_component = None
             self.active_plateform = None
 
     def getDir(self, sub_dir=None):

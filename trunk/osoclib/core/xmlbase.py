@@ -294,8 +294,15 @@ class NodeBase(object):
         
         return False
 
-    def has_element(self, item):
+    def hasElement(self, item):
         return self.__getIndexOf(item) >= 0
+    
+    def getElement(self, item):
+        idx = self.__getIndexOf(item)
+        if idx >= 0:
+            return self._data[idx]    
+        return None
+    
     
     def clear(self):
         self._data = []
@@ -304,6 +311,11 @@ class NodeBase(object):
     def setSubNobes(self, sub_nodes):
         self._sub_nodes = sub_nodes
         
+    def asXML(self, encoding="utf-8"):
+        xml_tree = self.asXMLTree()
+        xml_string = ET.tostring(xml_tree, encoding)
+        return XMLBeautifier(xml_string)
+
     def asXMLTree(self, parent=None):
         # Creation section node
         if(parent is None):

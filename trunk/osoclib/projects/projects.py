@@ -138,3 +138,11 @@ class Project(XmlFileBase):
         """
         if not self.components.remove(name):
             raise ProjectError("*** No component called '%s' exist in current project, component deletion canceled.\n" % name)
+
+    def findComponent(self, name):
+        """Search component instance in project
+        
+        Attributes
+            name - the component instance name
+        """
+        return self.components.getElement(name)

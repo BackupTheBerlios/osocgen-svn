@@ -183,7 +183,7 @@ class Component(XmlFileBase):
     __xml_name = "description.xml"
 
     def __init__(self, filename=None):
-        # Open ZipFile in RAM, so we can modify the archive without loosing previous datas.
+        # Open ZipFile in RAM, so we can modify the archive without loosing previous data.
         self.zfp = ZipString(filename)
         xml_data = ""
 
