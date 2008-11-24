@@ -66,20 +66,29 @@ def initialize_node(node, node_name, xml_root, subnodes=None):
     """
 
     if xml_root is not None:
+        # 1. Search initialization data from XML file
         xml_nodes = xml_root.find(node_name)
         if xml_nodes is not None:
+            # 2. Scan each element
             for el in xml_nodes:
-                subelement = node.add(el.text, el.attrib)
+                # 3. Add element
+                (element, subtrees) = node.add(el.text, el.attrib)
 
+                # 4. Initialize sub elements
                 if subnodes is not None:
+                    # 5. Scan each sub element
                     for (subnode_name, subnode_attrib) in subnodes.iteritems():
-                        if(isinstance(subnode_attrib, dict)):
-                            if subnode_attrib.has_key("subnodes"):
-                                initialize_node(subelement, subnode_name, el, subnode_attrib["subnodes"])
+                        # 6. Check if sub element is valid
+                        if subtrees.has_key(subnode_name):
+                            # 7. Check if there is another sub level
+                            #  and add sub elements and sub levels
+                            if(isinstance(subnode_attrib, dict)):
+                                if subnode_attrib.has_key("subnodes"):
+                                    initialize_node(subtrees[subnode_name], subnode_name, el, subnode_attrib["subnodes"])
+                                else:
+                                    initialize_node(subtrees[subnode_name], subnode_name, el, None)
                             else:
-                                initialize_node(subelement, subnode_name, el, None)
-                        else:
-                            initialize_node(subelement, subnode_name, el, None)
+                                initialize_node(subtrees[subnode_name], subnode_name, el, None)
     
     return node
 
@@ -212,7 +221,7 @@ class NodeBase(object):
         index = self.__getIndexOf(idx)
         if index < 0:
             return ItemBase()
-        return sef._data[index][0]
+        return self._data[index][0]
 
     def __setitem__(self, idx, value):
         index = self.__getIndexOf(idx)
@@ -356,7 +365,7 @@ class XmlFileBase(object):
         keys.append("description")
         self.__dict__["_keys"] = keys
 
-        for (name, value) in self._attribs.iteritems():
+        for (name, value) in attribs.iteritems():
             self.__dict__[name] = value
 
         try:
@@ -403,19 +412,19 @@ class XmlFileBase(object):
 
     def __delattr__(self, name):
         # Component base elements suppression canceled
-        if name in self._basekeys:
+        if name in self.__dict__["_basekeys"]:
             pass
 
     def asXMLTree(self):
         xml_tree = ET.Element(self.xml_basename)
-        for attr in self._attribs.keys():
+        for attr in self.__dict__["_attribs"].keys():
             xml_tree.set(attr, self.__dict__[attr])
 
         if self.description is not None:
             description = ET.SubElement(xml_tree, "description")
             description.text = str(self.description)
 
-        for node_name in self._nodes.iterkeys():
+        for node_name in self.__dict__["_nodes"].iterkeys():
             self.__dict__[node_name].asXMLTree(xml_tree)
 
         return xml_tree
