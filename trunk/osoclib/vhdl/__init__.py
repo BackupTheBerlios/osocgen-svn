@@ -1,1 +1,1 @@
-from entity import Entity, Instance
+from entity import Entity
