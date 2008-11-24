@@ -36,6 +36,7 @@ if __name__ == "__main__":
 
 from core import XmlFileBase
 from vhdl import Entity
+from components import Component
 from StringIO import StringIO
 import string
 
@@ -84,13 +85,17 @@ class Project(XmlFileBase):
         XmlFileBase.__init__(self, PROJECTS_NODES, PROJECTS_ATTRIBS, filename, None)
         if filename:
             self.filename = filename
+            #TODO: load component instances in RAM to analyze design
+             
 
     def save(self, filename=None):
         """Save project to disk."""
 
-        # Save to disk if file name specified
         if filename:
-            file = open(filename, "wb")
+            self.filename = filename
+        
+        if self.filename:
+            file = open(self.filename, "wb")
             file.write(self.asXML())
             file.close()
 

@@ -26,7 +26,6 @@ __version__ = "1.0.0"
 __versionTime__ = "xx/xx/xxxx"
 __author__ = "Fabrice MOUSSET <fabrice.mousset@laposte.net>"
 
-import sys
 import os
 import os.path as dir
 
@@ -119,8 +118,8 @@ class ProjectComponentCli(BaseCli):
         """\nDisplay available components.
         """
         comp_dir = settings.components_dir
-        for file in os.listdir(comp_dir):
-            name = dir.join(comp_dir, file)
+        for fname in os.listdir(comp_dir):
+            name = dir.join(comp_dir, fname)
             if(dir.isfile(name)):
                 cp = Component(name)
                 self.write("Name = %s, Version = %s, Category = %s\n" % (cp.name, cp.version, cp.category))
@@ -160,7 +159,7 @@ class ProjectComponentCli(BaseCli):
             except ProjectError, e:
                 self.write(e.message)
             else:
-                self.write("Component '%s' succproessfully added as '%s'.\n" % (args.base, dir.basename(args.name)))
+                self.write("Component '%s' successfully added as '%s'.\n" % (args.base, dir.basename(args.name)))
         else:
             self.write("*** Arguments extraction error, component addition canceled.\n")
 
@@ -345,7 +344,7 @@ class ProjectsCli(BaseCli):
         
         edit <string>
 
-            <string> = Project name. Project must be in projects directory when 
+            <string> = Project name. Project must be in projects sub-directory when 
                        full name not specified.
         """
 
@@ -358,18 +357,27 @@ class ProjectsCli(BaseCli):
         except:
             pass
 
-        name=dir.join(settings.components_dir,name) + ".zip"
+        # Append project sub-directory if no path specified
+        fpath, fname = dir.split(name)
+        if not fpath:
+            name = dir.join(settings.project_dir, fname)
+        
+        # Append default extension if not present
+        if not name.lower().endswith(".prj"):
+            name += ".prj"
+            
+        # Open project if file exist
         if(dir.isfile(name)):
-            cp = Component(name)
-            settings.active_component = cp
-            self.write("Project '%s', version '%s', category '%s' ready for edition.\n" % (cp.name, cp.version, cp.category))
+            cp = Project(name)
+            settings.active_project = cp
+            self.write("Project '%s', version '%s', board '%s' ready for edition.\n" % (cp.name, cp.version, cp.board))
         else:
             self.write("*** Project '%s' not found. Edition canceled.\n")
 
     def do_close(self, arg):
         """\nCancel current component edition.
         """
-        settings.active_component = None
+        settings.active_project = None
 
     def do_save(self, arg):
         """\nSave current project modifications.
@@ -380,12 +388,13 @@ class ProjectsCli(BaseCli):
             force = Force project overwriting if already exist.
         """
         
-        if not settings.active_component:
+        if not settings.active_project:
             self.write("*** No project edition in progression.\n")
             return
         
         force = False
-        name = os.path.basename(settings.active_project.filename)
+        name = settings.active_project.filename
+            
         if arg:
             try:
                 args = FILE_ARGS.parse(arg)
@@ -399,15 +408,36 @@ class ProjectsCli(BaseCli):
             self.write("*** No file name specified. Project saving canceled.\n")
             return
             
-        archive=dir.join(os.curdir, name) + ".xml"
+        fpath, fname = dir.split(name)
+        
+        # Append default extension if not present
+        if not fname.lower().endswith(".prj"):
+            fname = fname.split(".")
+            if len(fname) > 1:
+                fname = ".".join(fname.split(".")[:-1])
+            else:
+                fname = fname[0]
+            fname += ".prj"
+
+        # Append project sub-directory if no path specified
+        if not fpath:
+            name = dir.join(settings.project_dir, fname)
+        else:
+            name = dir.join(fpath, fname)
+
+        # Check if new file name
         if name != settings.active_project.filename:
-            if dir.exists(archive) and not force:
-                self.write("*** A project named '%s' already exists. Project saving canceled.\n" % archive)
+            # If file already exist, only overwrite if authorization is given 
+            if dir.exists(name) and not force:
+                self.write("*** A project named '%s' already exists. Project saving canceled.\n" % name)
                 return
+            
+            # Save new project file name
             settings.active_project.filename = name
             
-        settings.active_project.save(archive)
-        self.write("Project saved as '%s'\n" % archive)
+        # Finally, save project
+        settings.active_project.save(name)
+        self.write("Project saved as '%s'\n" % name)
 
     def do_version(self, arg):
         """\nDisplay or modify current component version.
@@ -416,7 +446,7 @@ class ProjectsCli(BaseCli):
 
             <string> = New version.
         """
-        if settings.active_component:
+        if settings.active_project:
             if arg:
                 arg = str(arg).strip()
                 old = settings.active_component.version
@@ -472,7 +502,22 @@ class ProjectsCli(BaseCli):
     def do_check(self, arg):
         """\nCheck current project for errors.
         """
-        pass
+        if not settings.active_project:
+            self.write('*** No open project, action canceled.\n')
+            return
+    
+    def do_compile(self, arg):
+        """\nGenerate System on Chip.
+        
+        compile [arg]
+        
+            no arg -> compile project in default directory.
+            arg    -> compile in specified directory. 
+        """
+        if not settings.active_project:
+            self.write('*** No open project, action canceled.\n')
+            return
+
     
     def do_routes(self, arg):
         """\nSystem on Chip routes manipulation commands.
