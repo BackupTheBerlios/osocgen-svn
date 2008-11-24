@@ -26,7 +26,7 @@ __version__ = "1.0.0"
 __versionTime__ = "xx/xx/xxxx"
 __author__ = "Fabrice MOUSSET <fabrice.mousset@laposte.net>"
 
-import cmd, re, os, sys
+import os, sys
 
 class Settings(object):
     """Settings class implements a Singleton design pattern to share the same
@@ -59,7 +59,8 @@ class Settings(object):
         if sub_dir:
             return os.path.join(self.__script_dir, sub_dir)
         else:
-            return self._script_dir
+            return self.__script_dir
 
     components_dir  = property(lambda self: self.getDir("components"))
     board_dir       = property(lambda self: self.getDir("boards"))
+    project_dir     = property(lambda self: self.getDir("projects"))
