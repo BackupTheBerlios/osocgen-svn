@@ -120,7 +120,8 @@ class Project(XmlFileBase):
         """
         
         # Check if there is no component instance with the same name
-        for cp in self.components:
+        for cpnode in self.components:
+            cp = cpnode[0]
             if cp.name == name:
                 raise ProjectError("*** Component called '%s' already exist in current project, component addition canceled.\n" % name)
     

@@ -48,7 +48,8 @@ class ProjectComponentGenericCli(BaseCli):
     def do_list(self, arg):
         """\nDisplay all component instance generics settings
         """
-        for gen in self.generics:
+        for gennode in self.generics:
+            gen = gennode[0]
             self.write("name=%s value=%s\n" % (gen.name, gen.value))
         
     def do_edit(self, arg):
@@ -76,7 +77,8 @@ class ProjectComponentInterfaceCli(BaseCli):
     def do_list(self, arg):
         """\nDisplay all component instance interfaces settings
         """
-        for iface in self.interfaces:
+        for ifacenode in self.interfaces:
+            iface = ifacenode[0]
             self.write("name=%s offset=%s link=%s\n" % (iface.name, iface.offset, iface.link))
 
     def do_edit(self, arg):
@@ -136,7 +138,8 @@ class ProjectComponentCli(BaseCli):
     def do_list(self, arg):
         """\nDisplay all component instances from active project.
         """
-        for (cp,prop) in settings.active_project.components:
+        for cpnode in settings.active_project.components:
+            cp = cpnode[0]
             self.write("name = %s, base = %s\n"%(cp.name,cp.base))
 
     def do_add(self, arg):
@@ -334,6 +337,7 @@ class ProjectsCli(BaseCli):
             proj.name = args.name
             proj.version =  args.version
             proj.category = args.category
+            proj.board = args.board
             self.write("New project created.\n")
             settings.active_project = proj
         else:
@@ -348,14 +352,10 @@ class ProjectsCli(BaseCli):
                        full name not specified.
         """
 
-        name = arg
         try:
-            args = FILE_ARGS.parse(arg).name
-            
-            if args.name:
-                name = args.name
+            name = FILE_ARGS.parse(arg).name
         except:
-            pass
+            name = arg
 
         # Append project sub-directory if no path specified
         fpath, fname = dir.split(name)
@@ -372,8 +372,10 @@ class ProjectsCli(BaseCli):
             settings.active_project = cp
             self.write("Project '%s', version '%s', board '%s' ready for edition.\n" % (cp.name, cp.version, cp.board))
         else:
-            self.write("*** Project '%s' not found. Edition canceled.\n")
+            self.write("*** Project '%s' not found. Edition canceled.\n" % name)
 
+    do_open = do_edit
+    
     def do_close(self, arg):
         """\nCancel current component edition.
         """
@@ -475,6 +477,24 @@ class ProjectsCli(BaseCli):
         else:
             self.write("*** No open project.\n")
 
+    def do_board(self, arg):
+        """\nDisplay or modify current project board.
+        
+        board [<string>]
+        
+            <string> = New board.
+        """
+        if settings.active_project:
+            if arg:
+                arg = str(arg).strip()
+                old = settings.active_project.board
+                settings.active_project.name = arg
+                self.write("Board changed from '%s' to '%s'.\n" % (old, arg))
+            else:
+                self.write("%s\n" % settings.active_project.board)
+        else:
+            self.write("*** No open project.\n")
+
     def do_components(self, arg):
         """\nComponents manipulation commands.
         
@@ -505,7 +525,9 @@ class ProjectsCli(BaseCli):
         if not settings.active_project:
             self.write('*** No open project, action canceled.\n')
             return
-    
+        
+        # Verification steps
+        # 1. 
     def do_compile(self, arg):
         """\nGenerate System on Chip.
         
