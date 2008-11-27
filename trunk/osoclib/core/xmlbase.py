@@ -221,7 +221,7 @@ class NodeBase(object):
         index = self.__getIndexOf(idx)
         if index < 0:
             return ItemBase()
-        return self._data[index][0]
+        return self._data[index]
 
     def __setitem__(self, idx, value):
         index = self.__getIndexOf(idx)
@@ -255,7 +255,7 @@ class NodeBase(object):
         try:
             data = self._data[self.__index]
             self.__index += 1
-            return data[0]
+            return data
         except:
             raise StopIteration
 

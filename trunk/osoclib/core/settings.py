@@ -30,7 +30,7 @@ import os, sys
 
 class Settings(object):
     """Settings class implements a Singleton design pattern to share the same
-    state to all instance of this class.
+    state to all instances of this class.
     This class will store the application settings like directory location,
     active component and active project.
     """
