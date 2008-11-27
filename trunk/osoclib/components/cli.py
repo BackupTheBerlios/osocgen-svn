@@ -71,11 +71,10 @@ class ComponentsHdlCli(BaseCli):
             <string> is hdl file name to remove.
         """
 
-        name = arg
         try:
             name = FILE_ARGS.parse(arg).name
         except:
-            pass
+            name = arg
             
         if name:
             try:
@@ -90,7 +89,8 @@ class ComponentsHdlCli(BaseCli):
     def do_list(self, arg):
         """\nDisplay HDL files from current component.
         """
-        for file in settings.active_component.hdl_files:
+        for filenode in settings.active_component.hdl_files:
+            file = filenode[0]
             self.write("Name : %s, scope : %s, order : %d, istop : %d\n" % (file.name, file.scope, file.order, file.istop))
 
     def do_order(self, arg):
@@ -108,11 +108,10 @@ class ComponentsCli(BaseCli):
         """\nDisplay XML description from current component or from specified component.
         """
 
-        name = arg
         try:
             name = FILE_ARGS.parse(arg).name
         except:
-            pass
+            name = arg
 
         if name:
             cp = Component(filename=dir.join(settings.components_dir, name))
@@ -158,14 +157,10 @@ class ComponentsCli(BaseCli):
             <string> = Component base name. Component MUST be in components directory.
         """
 
-        name = arg
         try:
-            args = FILE_ARGS.parse(arg).name
-            
-            if args.name:
-                name = args.name
+            name = FILE_ARGS.parse(arg).name
         except:
-            pass
+            name = arg
 
         name=dir.join(settings.components_dir,name) + ".zip"
         if(dir.isfile(name)):
@@ -173,11 +168,14 @@ class ComponentsCli(BaseCli):
             settings.active_component = cp
             self.write("Component '%s', version '%s', category '%s' ready for edition.\n" % (cp.name, cp.version, cp.category))
         else:
-            self.write("*** Component '%s' not found. Edition canceled.\n")
+            self.write("*** Component '%s' not found. Edition canceled.\n" % name)
 
     def do_close(self, arg):
         """\nCancel current component edition.
         """
+        if settings.active_component:
+            self.write("*** Component '%s' is closed, changes are lost.\n" % settings.active_component.name)
+            
         settings.active_component = None
 
     def do_save(self, arg):
@@ -197,25 +195,25 @@ class ComponentsCli(BaseCli):
         if arg:
             try:
                 args = FILE_ARGS.parse(arg)
-                name = args.name
+                name = args.name + ".zip"
                 force = args.force
             except:
                 self.write("*** Arguments parsing error. Component saving canceled.\n")
                 return
         
         if not name:
-            self.write("*** No file name specified. Component saving canceld.\n")
+            self.write("*** No file name specified. Component saving canceled.\n")
             return
             
-        archive=dir.join(settings.components_dir,name) + ".zip"
+        archive=dir.join(settings.components_dir,name)
         if name != settings.active_component.filename:
             if dir.exists(archive) and not force:
-                self.write("*** A component named '%s' already exists. Component saving canceled.\n" % name)
+                self.write("*** A component named '%s' already exists. Component saving canceled.\n" % name[:-4])
                 return
             settings.active_component.filename = name
             
         settings.active_component.save(archive)
-        self.write("Component saved as '%s'\n" % name)
+        self.write("Component saved as '%s'\n" % name[:-4])
 
     def do_version(self, arg):
         """\nDisplay or modify current component version.

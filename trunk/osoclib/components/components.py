@@ -198,6 +198,12 @@ class Component(XmlFileBase):
         if filename:
             self.filename = dir.basename(filename)
 
+        # HDL files attributes clean-up
+        for filenode in self.hdl_files:
+            file = filenode[0]
+            file.order = int(file.order)
+            file.istop = bool(file.istop)
+        
     def save(self, filename=None):
         """Update component settings in archive."""
 
@@ -212,7 +218,8 @@ class Component(XmlFileBase):
         """Define IP top file."""
 
         is_possible = False
-        for file in self.hdl_files:
+        for filenode in self.hdl_files:
+            file = filenode[0]
             if file.name == name:
                 is_possible = True
                 break
@@ -292,7 +299,8 @@ class Component(XmlFileBase):
         # Then get base name and directory and check if file already included
         name = dir.basename(filename)
         dirname = dir.dirname(dir.realpath(filename))
-        for file in self.hdl_files:
+        for filenode in self.hdl_files:
+            file = filenode[0]
             if file.name == name:
                 raise ComponentError("*** File '%s' already exist in component, file addition canceled.\n" % name)
 
@@ -304,7 +312,8 @@ class Component(XmlFileBase):
             order = len(self.hdl_files) + 1
 
         # Now we push down every file that has to loaded after this file
-        for file in self.hdl_files:
+        for filenode in self.hdl_files:
+            file = filenode[0]
             if file.order >= order:
                 file.order += 1
 
@@ -326,7 +335,8 @@ class Component(XmlFileBase):
         filename = str(filename).lower()
         order = None
         isTop = False
-        for file in self.hdl_files:
+        for filenode in self.hdl_files:
+            file = filenode[0]
             if file.name == filename:
                 order = file.order
                 istop = file.istop
@@ -349,6 +359,7 @@ class Component(XmlFileBase):
             self.interfaces.clear()
 
         # and finally remove the file from the XML description
-        for file in self.hdl_files:
+        for filenode in self.hdl_files:
+            file = filenode[0]
             if file.order >= order:
                 file.order -= 1
