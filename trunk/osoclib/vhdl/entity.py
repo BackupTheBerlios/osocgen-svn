@@ -7,7 +7,7 @@
 # Author:   Fabrice MOUSSET
 #
 # Created:  2007/04/03
-# Licence:  GPLv3 or newer
+# License:  GPLv3 or newer
 #-----------------------------------------------------------------------------
 # Revision list :
 #
@@ -101,7 +101,7 @@ class Entity:
         CaselessLiteral("END").suppress() + Optional(CaselessLiteral("ENTITY").suppress()) + Optional(matchPreviousLiteral(__entityIdent).suppress()) + __SEMI ).ignore(__comment)
 
     def __init__(self, filename=None):
-        """VHDL Entity extract initialisation."""
+        """VHDL Entity extract initialization."""
         self.filename = filename
         self._entity = None
 
@@ -185,10 +185,10 @@ class Entity:
         """ Create a component instance. """
 
         # Creating the instance name
-        instance = "  "
+        data = "  "
         if(properties.name != None):
-            instance += properties.name + " : "
-        instance += self._entity.entityId + "\n"
+            data += properties.name + " : "
+        data += self._entity.entityId + "\n"
 
         # Adding generics values if they are defined
         if(len(self._entity.generic) > 0):
@@ -223,8 +223,8 @@ class Entity:
                     data += "OPEN"
                 count += 1
             data += "\n  );\n"
-
-        return;
+            
+        return data
 
     generics  = property(lambda self: self._entity.generic)
     ports     = property(lambda self: self._entity.port)
