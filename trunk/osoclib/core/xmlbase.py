@@ -130,7 +130,11 @@ class ItemBase(object):
     def setAttributs(self, attribs):
         keys = self.__dict__["__valid_keys"]
         for (key,value) in attribs.items():
-            if(keys is None) or key in keys:
+            # Remove unused keys
+            if value is None:
+              if key in self.__dict__:
+                  del self.__dict__[key]  
+            elif(keys is None) or key in keys:
                 self.__dict__[key] = value
             else:
                 pass
@@ -161,8 +165,13 @@ class ItemBase(object):
         # No direct access to private members ;-)
         if name.startswith('_'):
             return
-
-        if(keys is None):
+		
+        # Don't add undefined keys
+        if value is None:
+            # Remove undefined keys if they exist
+            if name in self.__dict__:
+                del self.__dict__[name]  
+        elif(keys is None):
             self.__dict__[name] = value
         elif name in keys:
             self.__dict__[name] = value
@@ -297,11 +306,12 @@ class NodeBase(object):
 
     def remove(self, item):
         idx = self.__getIndexOf(item)
+        item = None
         if idx >= 0:
+            item = self._data[idx]
             del self._data[idx]
-            return True
         
-        return False
+        return item
 
     def hasElement(self, item):
         return self.__getIndexOf(item) >= 0
