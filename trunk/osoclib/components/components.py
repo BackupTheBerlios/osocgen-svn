@@ -7,7 +7,7 @@
 # Author:   Fabrice MOUSSET
 #
 # Created:  2007/10/24
-# Licence:  GPLv3 or newer
+# License:  GPLv3 or newer
 #-----------------------------------------------------------------------------
 # Last commit info:
 # ----------------------------------
@@ -34,7 +34,7 @@ if __name__ == "__main__":
     dirname, base = dir.split(dir.dirname(dir.realpath(__file__)))
     sys.path.append(dirname)
 
-from core import XmlFileBase, ZipFile, ZipString, is_zipfile
+from core import XmlFileBase, ZipString
 from vhdl import Entity
 from StringIO import StringIO
 import string
@@ -60,7 +60,7 @@ WB_INTERFACES = {
     "WBC" : ("Wishbone Clock and Reset", {"RST":"IO", "CLK":"IO"})
 }
 
-# COMPONENTS_NODES define Component XML file sections and attributs
+# COMPONENTS_NODES define Component XML file sections and attributes
 COMPONENTS_NODES = {
     "hdl_files"     : ("name", "scope", "order", "istop"),
     "driver_files"  : ("name", "scope"),
@@ -200,9 +200,9 @@ class Component(XmlFileBase):
 
         # HDL files attributes clean-up
         for filenode in self.hdl_files:
-            file = filenode[0]
-            file.order = int(file.order)
-            file.istop = bool(file.istop)
+            hdl_file = filenode[0]
+            hdl_file.order = int(hdl_file.order)
+            hdl_file.istop = bool(hdl_file.istop)
         
     def save(self, filename=None):
         """Update component settings in archive."""
@@ -219,20 +219,20 @@ class Component(XmlFileBase):
 
         is_possible = False
         for filenode in self.hdl_files:
-            file = filenode[0]
-            if file.name == name:
+            hdl_file = filenode[0]
+            if hdl_file.name == name:
                 is_possible = True
                 break
 
         if not is_possible:
-            raise ComponentError("*** File '%s' dont exist in component, operation canceled.\n" % name)
+            raise ComponentError("*** File '%s' don't exist in component, operation canceled.\n" % name)
 
         # Erase previous generics, ports and interfaces
         self.generics.clear()
         self.ports.clear()
         self.interfaces.clear()
 
-        # Extract Top fil entity declaration
+        # Extract Top file entity declaration
         hdl = Entity(StringIO(self.zfp.read(name)))
 
         # Add new Generics and Ports values
@@ -300,8 +300,8 @@ class Component(XmlFileBase):
         name = dir.basename(filename)
         dirname = dir.dirname(dir.realpath(filename))
         for filenode in self.hdl_files:
-            file = filenode[0]
-            if file.name == name:
+            hdl_file = filenode[0]
+            if hdl_file.name == name:
                 raise ComponentError("*** File '%s' already exist in component, file addition canceled.\n" % name)
 
         # Then adjust file load order
@@ -313,9 +313,9 @@ class Component(XmlFileBase):
 
         # Now we push down every file that has to loaded after this file
         for filenode in self.hdl_files:
-            file = filenode[0]
-            if file.order >= order:
-                file.order += 1
+            hdl_file = filenode[0]
+            if hdl_file.order >= order:
+                hdl_file.order += 1
 
         # Finally add this file to XML description and to ZIP archive
         self.hdl_files.add(None, name=name, scope=scope, order=order, istop=istop)
@@ -336,11 +336,11 @@ class Component(XmlFileBase):
         order = None
         isTop = False
         for filenode in self.hdl_files:
-            file = filenode[0]
-            if file.name == filename:
-                order = file.order
-                istop = file.istop
-                self.hdl_files.remove(file)
+            hdl_file = filenode[0]
+            if hdl_file.name == filename:
+                order = hdl_file.order
+                istop = hdl_file.istop
+                self.hdl_files.remove(hdl_file)
                 break
 
         if order is None:
@@ -360,6 +360,131 @@ class Component(XmlFileBase):
 
         # and finally remove the file from the XML description
         for filenode in self.hdl_files:
-            file = filenode[0]
-            if file.order >= order:
-                file.order -= 1
+            hdl_file = filenode[0]
+            if hdl_file.order >= order:
+                hdl_file.order -= 1
+
+    def check(self):
+        """Verify component integrity."""
+        
+        # First search top entity
+        topFile = None
+        errors = []
+        for filenode in self.hdl_files:
+            hdl_file = filenode[0]
+            if hdl_file.istop:
+                if topFile:
+                    errors.append("*** Multiple top entity declaration ('%s' and '%s')."%(topFile,hdl_file.name))
+                topFile = hdl_file.name
+        
+        if not topFile:
+            errors.append("No Top entity declaration.")
+        
+        # Extract Top file entity declaration
+        hdl = Entity(StringIO(self.zfp.read(topFile)))
+
+        # Get component interfaces
+        ifaces = {}
+        for (iface, iface_attr) in self.interfaces:
+            ifaces[iface.name.lower()] = 0
+            
+        # Get component ports
+        ports = {}
+        for (port, port_attr) in self.ports:
+            ports[port.name.lower()] = False
+
+        # Check to entity ports declaration
+        for hdl_port in hdl.ports:
+            hdl_port_name = hdl_port[0].lower()
+            if ports.has_key(hdl_port_name):
+                ports[hdl_port_name] = True
+                (port, port_attr) = self.ports.getElement(hdl_port_name)
+                port_iface_name = port.interface.lower()
+                if not ifaces.has_key(port_iface_name):
+                    errors.append("*** Port '%s' use undeclared interface '%s'." %(port.name, port.interface))
+                else:
+                    ifaces[port_iface_name] += 1
+            else:
+                errors.append("*** Port '%s' not declared in XML descriptor." % hdl_port_name)
+            
+        # Verify that each interface has signal attached
+        for (ifname, ifsignals) in ifaces.iteritems():
+            if ifsignals == 0:
+                errors.append("*** Interface '%s' has not signal attached." % ifname)
+            
+        # Verify that each port is present in HDL top file
+        for (port, port_ok) in ports.iteritems():
+            if not port_ok:
+                errors.append("*** Port '%s' don't exist in Top entity declaration." % port)
+        
+        # Verify that declared file is present in archive
+        namelist = self.zfp.namelist()
+        for (file, file_attr) in self.hdl_files:
+            try:
+                namelist.index(file.name)
+            except:
+                errors.append("*** File '%s' don't exist in archive." % file.mane)
+                
+        return errors
+        
+    def addInterface(self, name=None, type="export", clockandreset=None):
+        """Add new interface to component.
+        
+            name = interface name
+            type = type of interface (WBM, WBC, WBS or export) 
+            clockandreset = interface clock domain
+        """
+        
+        # Check parameters
+        if not name:
+            raise ComponentError("*** Parameter error, no interface name specified.")
+        name=name.lower()
+        
+        if not type:
+            raise ComponentError("*** Parameter error, no interface type specified.")
+
+        type = str(type).upper()
+
+        if not WB_INTERFACES.has_key(type):
+            raise ComponentError("*** Parameter error, unknown interface type '%s'." % type)
+
+        if (type=="WBS" or type=="WBM"):
+            if clockandreset==None:
+                raise ComponentError("*** Parameter error, interface type '%s' need clockandreset interface." % type)
+            clockandreset = clockandreset.lower()
+            
+        # Check if there is no interface with same name
+        if self.interfaces.hasElement(name):
+            raise ComponentError("*** Parameter error, interface name '%s' already defined." % name)
+        
+        self.interfaces.add(name=name, type=type, clockandreset=clockandreset)
+            
+    def delInterface(self, name=None):
+        """Remove interface from component.
+        
+            name = interface name
+        """
+
+        if not self.interfaces.hasElement(name):
+            raise ComponentError("*** Parameter error, no interface '%s' exist." % name)
+        
+        self.interfaces.remove(name)
+
+    def cleanInterfaces(self):
+        """Remove unused interfaces from component.
+        """
+        # Get component interfaces
+        ifaces = {}
+        for (iface, iface_attr) in self.interfaces:
+            ifaces[iface.name.lower()] = 0
+
+        # Check to entity ports declaration
+        for (port, port_attr) in self.ports:
+            port_iface_name = port.name.lower()
+            if ifaces.has_key(port_iface_name):
+                ifaces[port_iface_name] += 1
+            
+        # Verify that each interface has signal attached
+        for (ifname, ifsignals) in ifaces.iteritems():
+            if ifsignals == 0:
+                self.interfaces.remove(ifname)
