@@ -40,11 +40,19 @@ class ArgsSet(object):
         try:
             args = self.argsParser.parseString(arg)
 
-            # If all arguments are not defined, they are added width default value
             for (key,value) in self.args.items():
+                # If argument isn't defined, add it width default value
                 if key not in args.keys():
                     args[key] = value
 
+                # Convert integer value
+                if(isinstance(value, int)):
+                   args[key] = int(args[key])
+                
+                # Convert booleans
+                if(isinstance(value, bool)):
+                   args[key] = bool(args[key])
+                   
             return args
         except:
             return None
