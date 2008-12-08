@@ -7,7 +7,7 @@
 # Author:   Fabrice MOUSSET
 #
 # Created:  2008/01/1
-# Licence:  GPLv3 or newer
+# License:  GPLv3 or newer
 #-----------------------------------------------------------------------------
 # Last commit info:
 # ----------------------------------
@@ -26,9 +26,8 @@ __version__ = "1.0.0"
 __versionTime__ = "xx/xx/xxxx"
 __author__ = "Fabrice MOUSSET <fabrice.mousset@laposte.net>"
 
-import sys
 import os
-import os.path as dir
+import os.path as path
 
 from core import BaseCli, ArgsSet, Settings
 from components import *
@@ -37,8 +36,65 @@ CREATION_ARGS = ArgsSet(name="New Component", version="1.0", category="User Comp
 EDITION_ARGS = ArgsSet(name=None, version=None, category=None, description=None)
 HDL_ARGS = ArgsSet(name=None, scope="all", order=0, istop=False)
 FILE_ARGS = ArgsSet(name=None, force=False)
+IFACE_ARGS = ArgsSet(name=None, type="GLS", clockandreset=None)
 
+# Get current session settings
 settings = Settings()
+
+class ComponentsInterfaceCli(BaseCli):
+    def do_list(self, arg):
+        """\nDisplay all interfaces exposed by component.
+        """
+        for (iface, iface_param) in settings.active_component.interfaces:
+            self.write("name=%s, type=%s, clockandreset=%s.\n" % (iface.name, iface.type, iface.clockandreset))
+            
+    def do_add(self, arg):
+        """\nAdd new interface to the component.
+        
+        add name=<string> type=WBM|WBS|WBC|GLS clockandreset=<string>
+        
+            name = interface name. REQUIRED (must be unique)
+            type = interface type (WBM, WBS, WBC or GLS allowed)
+            clockandreset = clock domain for this interface (required for WBM or WBS interfaces).
+        """
+        args = IFACE_ARGS.parse(arg)
+        if args:
+            try:
+                settings.active_component.addInterface(args.name, args.type, args.clockandreset)
+            except ComponentError, e:
+                self.write(e.message)
+            else:
+                self.write("Interface '%s' successfully added.\n" % args.name)
+        else:
+            self.write("*** Arguments extraction error, interface addition canceled.\n")
+        
+    def do_del(self, arg):
+        """\nRemove an interface from the component
+        
+        del <string>
+        
+            string = interface name
+        """
+        try:
+            name = FILE_ARGS.parse(arg).name
+        except:
+            name = arg
+
+        if name:
+            try:
+                settings.active_component.delInterface(name)
+            except ComponentError, e:
+                self.write(e.message)
+            else:
+                self.write("Interface '%s' successfully removed.\n" % name)
+        else:
+            self.write("*** Argument error, interface deletion canceled.\n")
+            
+    def do_cleanup(self, arg):
+        """\nRemove all unused interfaces from the component.
+        """
+        settings.active_component.cleanInterfaces()
+        
 
 class ComponentsHdlCli(BaseCli):
     def do_add(self, arg):
@@ -53,12 +109,14 @@ class ComponentsHdlCli(BaseCli):
         """
         args = HDL_ARGS.parse(arg)
         if args:
+            if "top" in args.keys():
+                args["istop"] = args.top
             try:
                 settings.active_component.addHdl(args.name, args.scope, args.order, args.istop)
             except ComponentError, e:
                 self.write(e.message)
             else:
-                self.write("HDL file '%s' successfully added.\n" % dir.basename(args.name))
+                self.write("HDL file '%s' successfully added.\n" % path.basename(args.name))
         else:
             self.write("*** Arguments extraction error, file addition canceled.\n")
 
@@ -100,8 +158,26 @@ class ComponentsHdlCli(BaseCli):
 
     def do_top(self, arg):
         """\nSelect current component hdl top file.
+        
+        top <string>
+        
+            <string> is hld file name to set as top entity.
         """
-        pass
+        
+        try:
+            name = FILE_ARGS.parse(arg).name
+        except:
+            name = arg
+            
+        if name:
+            try:
+                settings.active_component.setTop(name)
+            except ComponentError, e:
+                self.write(e.message)
+            else:
+                self.write("HDL file '%s' is now to file.\n" % name)
+        else:
+            self.write("*** Argument error, file selection canceled.\n")
     
 class ComponentsCli(BaseCli):
     def do_xml(self, arg):
@@ -114,7 +190,7 @@ class ComponentsCli(BaseCli):
             name = arg
 
         if name:
-            cp = Component(filename=dir.join(settings.components_dir, name))
+            cp = Component(filename=path.join(settings.components_dir, name))
         else:
             cp = settings.active_component
 
@@ -126,13 +202,14 @@ class ComponentsCli(BaseCli):
         """
         comp_dir = settings.components_dir
         for file in os.listdir(comp_dir):
-            name = dir.join(comp_dir, file)
-            if(dir.isfile(name)):
+            name = path.join(comp_dir, file)
+            if(path.isfile(name)):
                 cp = Component(name)
                 self.write("Name = %s, Version = %s, Category = %s\n" % (cp.name, cp.version, cp.category))
 
     def do_create(self, arg):
         """\nCreate a new component.
+        
         create [name=<string>] [version=<string>] [category=<string>]
 
             name     = new component name. Default = New Component.
@@ -152,6 +229,7 @@ class ComponentsCli(BaseCli):
 
     def do_edit(self, arg):
         """\nOpen a existing component for modification.
+        
         edit <string>
 
             <string> = Component base name. Component MUST be in components directory.
@@ -162,8 +240,8 @@ class ComponentsCli(BaseCli):
         except:
             name = arg
 
-        name=dir.join(settings.components_dir,name) + ".zip"
-        if(dir.isfile(name)):
+        name = path.join(settings.components_dir,name) + ".zip"
+        if(path.isfile(name)):
             cp = Component(name)
             settings.active_component = cp
             self.write("Component '%s', version '%s', category '%s' ready for edition.\n" % (cp.name, cp.version, cp.category))
@@ -180,6 +258,7 @@ class ComponentsCli(BaseCli):
 
     def do_save(self, arg):
         """\nSave current component modifications.
+        
         save [name=<string>] [--force]
 
             name = Archive name (without extension).
@@ -205,9 +284,9 @@ class ComponentsCli(BaseCli):
             self.write("*** No file name specified. Component saving canceled.\n")
             return
             
-        archive=dir.join(settings.components_dir,name)
+        archive=path.join(settings.components_dir,name)
         if name != settings.active_component.filename:
-            if dir.exists(archive) and not force:
+            if path.exists(archive) and not force:
                 self.write("*** A component named '%s' already exists. Component saving canceled.\n" % name[:-4])
                 return
             settings.active_component.filename = name
@@ -217,6 +296,7 @@ class ComponentsCli(BaseCli):
 
     def do_version(self, arg):
         """\nDisplay or modify current component version.
+        
         version [<string>]
 
             <string> = New version.
@@ -234,6 +314,7 @@ class ComponentsCli(BaseCli):
 
     def do_category(self, arg):
         """\nDisplay or modify current component category.
+        
         category [<string>]
 
             <string> = New category.
@@ -251,6 +332,7 @@ class ComponentsCli(BaseCli):
 
     def do_name(self, arg):
         """\nDisplay or modify current component name.
+        
         name [<string>]
 
             <string> = New name.
@@ -267,10 +349,12 @@ class ComponentsCli(BaseCli):
             self.write("*** No component opened for edition.\n")
 
     def do_hdl(self, arg):
-        """\nhdl [arg] : component HDL files manipulation commands.
+        """\nComponent HDL files manipulation commands.
 
-        no arg -> launch Components HDL files management shell.
-        arg    -> execture [arg] HDL files command.
+        hdl [arg]
+        
+            no arg -> launch Components HDL files management shell.
+            arg    -> execture [arg] HDL files command.
         """
 
         if not settings.active_component:
@@ -287,30 +371,63 @@ class ComponentsCli(BaseCli):
         else:
             cli.cmdloop()
             self.stdout.write("\n")
+            
+    def do_check(self, arg):
+        """\nCheck active component for errors.
+        """
+        if not settings.active_component:
+            self.write('*** No component selected, action canceled.\n')
+            return
+        
+        errors = settings.active_component.check()
+        if errors:
+            for message in errors:
+                self.write(message)
+        else:
+            self.write("No error\n")
 
     def do_driver(self, arg):
-        """\ndriver [arg] : component software driver files manipulation commands.
+        """\nComponent software driver files manipulation commands.
 
-        no arg -> launch Components Driver files management shell.
-        arg    -> execture [arg] Driver command.
+        driver [arg]
+        
+            no arg -> launch Components Driver files management shell.
+            arg    -> execture [arg] Driver command.
         """
 
         pass
 
     def do_register(self, arg):
-        """\nregister [arg] : component registers manipulation commands.
+        """\nComponent registers manipulation commands.
 
-        no arg -> launch Components Registers management shell.
-        arg    -> execture [arg] Register command.
+        register [arg]
+        
+            no arg -> launch Components Registers management shell.
+            arg    -> execture [arg] Register command.
         """
 
         pass
 
-    def do_interface(self, arg):
-        """\ninterface [arg] : component Wihsbone Interfaces manipulation commands.
+    def do_interfaces(self, arg):
+        """\nComponent Wihsbone Interfaces manipulation commands.
 
-        no arg -> launch Components Wihsbone Interfaces management shell.
-        arg    -> execture [arg] Interface command.
+        interfaces [arg]
+        
+            no arg -> launch Components Wihsbone Interfaces management shell.
+            arg    -> execture [arg] Interface command.
         """
 
-        pass
+        if not settings.active_component:
+            self.write('*** No component selected, action canceled.\n')
+            return
+
+        cli = ComponentsInterfaceCli(self)
+        cli.setPrompt("interfaces")
+        arg = str(arg)
+        if len(arg) > 0:
+            line = cli.precmd(arg)
+            cli.onecmd(line)
+            cli.postcmd(True, line)
+        else:
+            cli.cmdloop()
+            self.stdout.write("\n")
