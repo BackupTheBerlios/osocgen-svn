@@ -32,10 +32,6 @@ if __name__ == "__main__":
     sys.path.append(dirname)
 
 import os
-import re
-import sys
-import string
-from optparse import OptionParser
 from thirdparty.pyparsing import *
 
 class Entity:
@@ -106,19 +102,16 @@ class Entity:
         self._entity = None
 
         def extractEntity(data, line):
-            """ VHDL Line parser.
+            """VHDL Line parser.
 
             This function extract VHDL Entity declaration and remove all
             comments lines from it.
             """
-            if(string.find(data, "END ENTITY") < 0 and len(line)  > 0):
-                if(len(data) == 0 and string.find(line, "ENTITY") < 0):
+            if(data.find("END ENTITY") < 0 and len(line)  > 0):
+                if(len(data) == 0 and line.find("ENTITY") < 0):
                     return ""
-                i = string.find(line, '--')
-                if(i < 0):
-                    return data + line + " "
-                if(i > 0):
-                    return data + line[:i].rstrip() + " "
+                return data + line + "\n"
+            
             return data
 
         fd = filename
@@ -129,18 +122,18 @@ class Entity:
         if fd:
             data = ""
             for line in fd:
-                data = extractEntity(data, string.upper(line.rstrip().lstrip()))
+                data = extractEntity(data, line.upper().strip())
             fd.close()
             self._entity = self.__entityDecl.parseString(data)
 
     def __combineType(self, arg):
-        """  Generaty signal type string"""
+        """Generate signal type string."""
         if(len(arg) > 1):
             return arg[0] + "(" + " ".join(arg[1:]) + ")"
         return arg[0]
 
     def __str__(self, as_component=False):
-        """  Generate entity or component declaration string"""
+        """Generate entity or component declaration string."""
 
         if(self._entity == None):
             return "";
@@ -182,7 +175,7 @@ class Entity:
         return data
 
     def toInstance(self, properties):
-        """ Create a component instance. """
+        """Create a component instance."""
 
         # Creating the instance name
         data = "  "
@@ -246,7 +239,7 @@ class Entity:
         return None
 
     def getGenericValue(self, name):
-        # FIXME: Devra être testé par la suite
+        #FIXME: to be tested in "real life"
         if(self._entity != None):
             for generic in self._entity.generic:
                 if(generic[0] == name):
@@ -269,7 +262,7 @@ def main():
     """
     entity = Entity(filename='../../temp/imx_wrapper.vhd')
     print entity
-    print "Les generics :"
+    print "Generics for imx_wrapper:"
     print entity.getGenerics()
     entity = Entity(filename='../../temp/irq_mngr.vhd')
     print entity
