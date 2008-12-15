@@ -12,6 +12,7 @@ if __name__ == "__main__":
     sys.path.append(dirname)
 
 from thirdparty.pyparsing import *
+from utils import to_boolean
 
 def convertFlags(org_string, location, tokens):
     return [tokens[0], True]
@@ -47,11 +48,14 @@ class ArgsSet(object):
 
                 # Convert integer value
                 if(isinstance(value, int)):
-                   args[key] = int(args[key])
+                    try:
+                        args[key] = int(args[key])
+                    except ValueError:
+                        args[key] = 0
                 
                 # Convert booleans
                 if(isinstance(value, bool)):
-                   args[key] = bool(args[key])
+                    args[key] = to_boolean(args[key])
                    
             return args
         except:
