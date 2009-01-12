@@ -35,8 +35,8 @@ if __name__ == "__main__":
 
 import thirdparty.ElementTree as ET
 
-def XMLBeautifier(xml_data):
-    """This function make XML output looks better and more humman readable.
+def xml_beautifier(xml_data):
+    """This function make XML output looks better and more human readable.
     """
     xml_text = ""
     xml_ident = 0
@@ -68,14 +68,14 @@ def initialize_node(node, node_name, xml_root, subnodes=None):
     if xml_root is not None:
         # 1. Search initialization data from XML file
         xml_nodes = xml_root.find(node_name)
-        if xml_nodes is not None:
+        if not xml_nodes is None:
             # 2. Scan each element
             for el in xml_nodes:
                 # 3. Add element
-                (element, subtrees) = node.add(el.text, el.attrib)
+                subtrees = node.add(el.text, el.attrib)[1]
 
                 # 4. Initialize sub elements
-                if subnodes is not None:
+                if not subnodes is None:
                     # 5. Scan each sub element
                     for (subnode_name, subnode_attrib) in subnodes.iteritems():
                         # 6. Check if sub element is valid
@@ -84,11 +84,18 @@ def initialize_node(node, node_name, xml_root, subnodes=None):
                             #  and add sub elements and sub levels
                             if(isinstance(subnode_attrib, dict)):
                                 if subnode_attrib.has_key("subnodes"):
-                                    initialize_node(subtrees[subnode_name], subnode_name, el, subnode_attrib["subnodes"])
+                                    initialize_node(subtrees[subnode_name], 
+                                                    subnode_name, el, 
+                                                    subnode_attrib["subnodes"]
+                                                    )
                                 else:
-                                    initialize_node(subtrees[subnode_name], subnode_name, el, None)
+                                    initialize_node(subtrees[subnode_name],
+                                                    subnode_name, el, None
+                                                    )
                             else:
-                                initialize_node(subtrees[subnode_name], subnode_name, el, None)
+                                initialize_node(subtrees[subnode_name],
+                                                subnode_name, el, None
+                                                )
     
     return node
 
@@ -103,7 +110,7 @@ def create_node(node_name, attribs, xml_root, subnodes=None):
     """
     node = NodeBase(node_name[:-1], attribs)
     
-    if subnodes is not None:
+    if not subnodes is None:
         node.setSubNobes(subnodes)
 
     return initialize_node(node, node_name, xml_root, subnodes)
@@ -111,8 +118,9 @@ def create_node(node_name, attribs, xml_root, subnodes=None):
 class ItemBase(object):
     """ This class should help working with elements stored in XML files.
         
-        Direct acces to each attribut is possible via dictionary or as object attribut.
-        Attribut names are caseless.
+        Direct access to each attribute is possible via dictionary or as object
+        attribute.
+        Attribute names are caseless.
         
         Attributes:
             tag           Node description
@@ -132,9 +140,11 @@ class ItemBase(object):
         for (key,value) in attribs.items():
             # Remove unused keys
             if value is None:
-              if key in self.__dict__:
-                  del self.__dict__[key]  
-            elif(keys is None) or key in keys:
+                if key in self.__dict__:
+                    del self.__dict__[key]  
+            elif keys is None:
+                self.__dict__[key] = value
+            elif key in keys:
                 self.__dict__[key] = value
             else:
                 pass
@@ -171,7 +181,7 @@ class ItemBase(object):
             # Remove undefined keys if they exist
             if name in self.__dict__:
                 del self.__dict__[name]  
-        elif(keys is None):
+        elif keys is None:
             self.__dict__[name] = value
         elif name in keys:
             self.__dict__[name] = value
@@ -195,7 +205,7 @@ class ItemBase(object):
         return item == self
 
     def asXMLTree(self, parent, node_name):
-        if(parent is None):
+        if parent is None:
             xml_node =  ET.Element(node_name)
         else:
             xml_node = ET.SubElement(parent, node_name)
@@ -209,11 +219,11 @@ class ItemBase(object):
 
 class NodeBase(object):
     """ This class should help working with elements stored in XML files.
-        Direct acces to each attribut is possible via dictionary or as object attribut.
-        Attribut names are caseless.
+        Direct access to each attribute is possible via dictionary or as object attribute.
+        Attribute names are caseless.
         
         Attributes:
-            node_name    Node base name, subnodes
+            node_name    Node base name, sub-nodes
             valid_keys   Valid attributes
             sub_nodes    Sub-nodes names and attributes
     """
@@ -222,7 +232,6 @@ class NodeBase(object):
         self._valid_keys = valid_keys
         self._default_key = default_key
         self._data = []
-        self.__index = 0
         self._node_name = node_name
         self._sub_nodes = None
 
@@ -254,19 +263,15 @@ class NodeBase(object):
             return retval
 
     def __iter__(self):
-        self.__index = 0
-        return self
+        for data in self._data:
+            yield data
 
+    def iteritems(self):
+        for data in self._data:
+            yield data[0]
+            
     def __str__(self):
         return self._node_name
-
-    def next(self):
-        try:
-            data = self._data[self.__index]
-            self.__index += 1
-            return data
-        except:
-            raise StopIteration
 
     def __getIndexOf(self, item):
         # Scan _data collection and search match with element name
@@ -287,13 +292,17 @@ class NodeBase(object):
         item.setAttributs(attrib)
 
         sub_nodes = {}
-        if self._sub_nodes is not None:
+        if not self._sub_nodes is None:
             for (node_name, node_attrib) in self._sub_nodes.iteritems():
-                if(isinstance(node_attrib, dict)):
+                if isinstance(node_attrib, dict):
                     if node_attrib.has_key("subnodes"):
-                        node = create_node(node_name, node_attrib["attribs"], None, node_attrib["subnodes"],)
+                        node = create_node(node_name, node_attrib["attribs"], 
+                                           None, node_attrib["subnodes"]
+                                           )
                     else:
-                        node = create_node(node_name, node_attrib["attribs"], None)
+                        node = create_node(node_name, node_attrib["attribs"],
+                                           None
+                                           )
                 else:
                     node = create_node(node_name, node_attrib, None)
                 
@@ -322,10 +331,8 @@ class NodeBase(object):
             return self._data[idx]    
         return None
     
-    
     def clear(self):
         self._data = []
-        self.__index = 0
 
     def setSubNobes(self, sub_nodes):
         self._sub_nodes = sub_nodes
@@ -333,23 +340,38 @@ class NodeBase(object):
     def asXML(self, encoding="utf-8"):
         xml_tree = self.asXMLTree()
         xml_string = ET.tostring(xml_tree, encoding)
-        return XMLBeautifier(xml_string)
+        return xml_beautifier(xml_string)
 
     def asXMLTree(self, parent=None):
         # Creation section node
-        if(parent is None):
+        if parent is None:
             xml_tree =  ET.Element(self._node_name+'s')
         else:
             xml_tree = ET.SubElement(parent, self._node_name+'s')
 
-        # Append childrens to section node
+        # Append children to section node
         for (item, sub_nodes) in self._data:
             data = item.asXMLTree(xml_tree, self._node_name)
             # Append sub-nodes to XML Tree
-            for (sub_node_name, sub_node_element) in sub_nodes.iteritems():
+            for (_, sub_node_element) in sub_nodes.iteritems():
                 sub_node_element.asXMLTree(data)
 
         return xml_tree
+    
+    def asItemList(self):
+        """Convert elements to list without sub-nodes"""
+        return [data for (data, _) in self._data]
+
+    def asDict(self, key, value=None):
+        """Convert elements to dictionary without sub-nodes"""
+        result = {}
+        for (data, _) in self._data:
+            if value is None:
+                result[data.key] = data
+            else:
+                result[data.key] = data.value
+        
+        return result
 
 class XmlFileBase(object):
     """This class will help to managed each XML files used for Orchestra project.
@@ -367,7 +389,7 @@ class XmlFileBase(object):
 
         keys = nodes.keys()
         keys.append(attribs.keys())
-        keys.append(("_nodes","_attribs","_keys","_basekeys"))
+        keys.append(("_nodes", "_attribs", "_keys", "_basekeys"))
 
         self.__dict__["_nodes"] = nodes
         self.__dict__["_attribs"] = attribs
@@ -392,21 +414,25 @@ class XmlFileBase(object):
         for (node_name, node_attrib) in nodes.iteritems():
             if(isinstance(node_attrib, dict)):
                 if node_attrib.has_key("subnodes"):
-                    node = create_node(node_name, node_attrib["attribs"], xml_root, node_attrib["subnodes"],)
+                    node = create_node(node_name, node_attrib["attribs"],
+                                       xml_root, node_attrib["subnodes"]
+                                       )
                 else:
-                    node = create_node(node_name, node_attrib["attribs"], xml_root)
+                    node = create_node(node_name, node_attrib["attribs"],
+                                       xml_root
+                                       )
             else:
                 node = create_node(node_name, node_attrib, xml_root)
                 
             self.__dict__[node_name] = node
 
-        if xml_root is not None:
+        if not xml_root is None:
             el = xml_root.getroot()
             for (name, value) in el.attrib.items():
                 self.__dict__[name] = value
 
             el = xml_root.find("description")
-            if(el != None):
+            if not el is None:
                 self.description = str(el.text)
 
     def __setattr__(self, name, value):
@@ -430,7 +456,7 @@ class XmlFileBase(object):
         for attr in self.__dict__["_attribs"].keys():
             xml_tree.set(attr, self.__dict__[attr])
 
-        if self.description is not None:
+        if not self.description is None:
             description = ET.SubElement(xml_tree, "description")
             description.text = str(self.description)
 
@@ -442,7 +468,7 @@ class XmlFileBase(object):
     def asXML(self, encoding="utf-8"):
         xml_tree = self.asXMLTree()
         xml_string = ET.tostring(xml_tree, encoding)
-        return XMLBeautifier(xml_string)
+        return xml_beautifier(xml_string)
 
     def __str__(self):
         return self.asXML()
