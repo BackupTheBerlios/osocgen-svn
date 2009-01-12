@@ -26,7 +26,7 @@ __version__ = "1.0.0"
 __versionTime__ = "xx/xx/xxxx"
 __author__ = "Fabrice MOUSSET <fabrice.mousset@laposte.net>"
 
-from zipfile import ZipFile, is_zipfile, ZipInfo, ZIP_DEFLATED, ZIP_STORED, ZIP64_LIMIT
+from zipfile import ZipFile, is_zipfile, ZipInfo, ZIP_DEFLATED
 import os.path as dir
 import os
 import glob
@@ -50,7 +50,13 @@ def normDirname(dirname):
 
     return dirname
 
-def filter(lst, patterns):
+def is_matching_patterns(patterns, item):
+    for pattern in patterns:
+        if pattern.match(item.upper()):
+            return True
+    return False
+
+def filter(items, patterns):
     """
     Retourne deux sous-listes de la liste-fichiers LST :
        - la première est la liste qui respecte la liste PATTERNS
@@ -58,17 +64,13 @@ def filter(lst, patterns):
     filter remplace fnmatch, car sous Windows fnmatch se plante avec '*.*' et les fichiers '*.'
     """
 
-    result=[]
-    antiresult=[]
-    for pattern in patterns:
-        p = re.compile(pattern.upper())
+    re_patterns = [re.compile(pattern.upper()) for pattern in patterns]
+    result = [item for item in items
+              if is_matching_patterns(re_patterns, item)
+              ]
 
-        for item in lst:
-            if p.match(item.upper()) and not item in result:
-                result.append(item)
-    for item in lst:
-        if not item in result:
-            antiresult.append(item)
+    antiresult = [item for item in items
+                        if not item in result]
     result.sort()
     antiresult.sort()
     return(result,antiresult)
@@ -113,16 +115,16 @@ class ExtendedZipFile(ZipFile):
         if destination == '':
             destination = os.getcwd()  ## on dezippe dans le repertoire locale
 
-        for file in self.namelist():  ## On parcourt l'ensemble des fichiers de l'archive
-            filename = dir.join(destination, file)
-            if file.endswith('/'):   ## S'il s'agit d'un repertoire, on se contente de creer le dossier
+        for zfile in self.namelist():  ## On parcourt l'ensemble des fichiers de l'archive
+            filename = dir.join(destination, zfile)
+            if zfile.endswith('/'):   ## S'il s'agit d'un repertoire, on se contente de creer le dossier
                 try:
                     os.makedirs(filename)
                 except:
                     pass
             else:
-                data = self.read(file)                  ## lecture du fichier compresse
-                fp = open(filenale, "wb")               ## creation en local du nouveau fichier
+                data = self.read(zfile)                 ## lecture du fichier compresse
+                fp = open(filename, "wb")               ## creation en local du nouveau fichier
                 fp.write(data)                          ## ajout des donnees du fichier compresse dans le fichier local
                 fp.close()
 
