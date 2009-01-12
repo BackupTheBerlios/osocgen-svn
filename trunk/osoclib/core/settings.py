@@ -48,19 +48,40 @@ class Settings(object):
 
     def __init__(self):
         if self.__do_init:
-            pathname, scriptname = os.path.split(sys.argv[0])
+            (pathname, _) = os.path.split(sys.argv[0])
             self.__script_dir = os.path.abspath(pathname)
             self.active_project = None
             self.active_component = None
             self.project_component = None
             self.active_plateform = None
 
-    def getDir(self, sub_dir=None):
+    def _getDir(self, sub_dir=None):
+        """Generate directory name based on project base directory.
+        
+        @param sub_dir: Sub-directory name
+        @return: directory full path string 
+        """
         if sub_dir:
             return os.path.join(self.__script_dir, sub_dir)
         else:
             return self.__script_dir
 
-    components_dir  = property(lambda self: self.getDir("components"))
-    board_dir       = property(lambda self: self.getDir("boards"))
-    project_dir     = property(lambda self: self.getDir("projects"))
+    @property
+    def base_dir(self):
+        """Returns Orchestra base directory."""
+        return self._getDir()
+    
+    @property
+    def components_dir(self):
+        """Return Orchestra Components base directory."""
+        return self._getDir("components")
+    
+    @property
+    def board_dir(self):
+        """Return Orchestra Boards base directory."""
+        return self._getDir("boards")
+    
+    @property
+    def project_dir(self):
+        """Return Orchestra Projects default directory."""
+        return self._getDir("projects")
