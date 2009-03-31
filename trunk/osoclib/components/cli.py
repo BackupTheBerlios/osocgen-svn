@@ -21,7 +21,8 @@
 #
 #-----------------------------------------------------------------------------
 
-__doc__ = "Command Line Interface for Armadeus Ready Components manipulation."
+"Command Line Interface for Orchestra Components/IPs manipulation."
+
 __version__ = "1.0.0"
 __versionTime__ = "xx/xx/xxxx"
 __author__ = "Fabrice MOUSSET <fabrice.mousset@laposte.net>"
@@ -153,7 +154,7 @@ class ComponentsHdlCli(BaseCli):
         add name=<string> [scope=<string>] [order=<integer>] [--istop|istop=True/False/1/0]
 
             name  = hdl file name. REQUIRED.
-            scope = scope of this file (e.g. all, xilinx, testbench). Default = all.
+            scope = scope of this file (e.g. all, altera, xilinx, testbench). Default = all.
             order = load order in hdl project. By default it is file index.
             istop = file is top file of component. By default false. --istop equals istop=True
         """

@@ -21,7 +21,8 @@
 #
 #-----------------------------------------------------------------------------
 
-__doc__         = "HDL Components manipulation routines"
+"Orchestra Components/IP manipulation routines and classes."
+
 __version__     = "1.0"
 __versionTime__ = "24/10/2007"
 __author__      = "Fabrice MOUSSET <fabrice.mousset@laposte.net>"
@@ -325,6 +326,7 @@ class ComponentError(Exception):
     __slots__ = ('message')
 
     def __init__(self, message):
+        Exception.__init__(self)
         self.message = message
 
     def __str__(self):
@@ -591,6 +593,27 @@ class Component(XmlFileBase):
             if hdl_file.order >= order:
                 hdl_file.order -= 1
 
+    def extractHDL(self, base_dir, context=None):
+        """Copy components HDL files to a given directory.
+        
+            @param base_dir: destination directory
+            @param context: used to define type of project (xilinx, altera, etc.)
+            @return:  list containing file names
+        """
+        #TODO: Extract file base on context value
+        files = []
+        for hdl_file in self.hdl_files.iteritems():
+            files.append(hdl_file.name)
+            filename = path.join(base_dir, hdl_file.name)
+            try:
+                vhdl_fd = open(filename, "wb")
+            except IOError:
+                raise ComponentError("Can't create %s file." % hdl_file.name)
+            
+            vhdl_fd.write(self.zfp.read(hdl_file.name))
+            vhdl_fd.close()
+        return files
+        
     def check(self):
         """Verify component integrity."""
         
@@ -637,7 +660,8 @@ class Component(XmlFileBase):
         
         self._errors = errors
         return errors
-        
+    
+    # pylint: disable-msg=W0622
     def addInterface(self, name=None, type="export", clockandreset=None):
         """Add new interface to component.
         
@@ -699,12 +723,13 @@ class Component(XmlFileBase):
         for (ifname, ifsignals) in ifaces.iteritems():
             if ifsignals == 0:
                 self.interfaces.remove(ifname)
-                
-    def asEntity(self):
+    
+    def asEntity(self, context=None):
         """Convert component into VHDL entity object.
         """
         # First search top entity
         for hdl_file in self.hdl_files.iteritems():
+            #TODO: Extract entity value based on context value
             if hdl_file.istop:
                 # Extract Top file entity declaration
                 topFileStr = StringIO(self.zfp.read(hdl_file.name))
