@@ -54,9 +54,15 @@ def purge_dir(basedir):
     
     for root, dirs, files in os.walk(basedir, topdown=False):
         for name in files:
-            os.remove(join(root, name))
+            try:
+                os.remove(join(root, name))
+            except:
+                pass
         for name in dirs:
-            os.rmdir(join(root, name))
+            try:
+                os.rmdir(join(root, name))
+            except:
+                pass
 
 def format_table(titles, rows):
     """Format a table

@@ -32,6 +32,7 @@ class ArgsError(Exception):
     __slots__ = ('message')
 
     def __init__(self, message):
+        Exception.__init__(self)
         self.message = message
 
     def __str__(self):

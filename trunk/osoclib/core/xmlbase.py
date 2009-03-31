@@ -27,10 +27,10 @@ __versionTime__ = "16/01/2008"
 __author__ = "Fabrice MOUSSET <fabrice.mousset@laposte.net>"
 
 if __name__ == "__main__":
-    import os.path as dir
+    import os.path as path
     import sys
 
-    dirname, base = dir.split(dir.dirname(dir.realpath(__file__)))
+    dirname, base = path.split(path.dirname(path.realpath(__file__)))
     sys.path.append(dirname)
 
 import thirdparty.ElementTree as ET

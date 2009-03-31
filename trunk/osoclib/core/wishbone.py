@@ -21,7 +21,8 @@
 #
 #-----------------------------------------------------------------------------
 
-__doc__ = "Whisbone SoC manipulation routines"
+"Wishbone SoC signals declaration"
+
 __version__ = "1.0.0"
 __versionTime__ = "xx/xx/xxxx"
 __author__ = "Fabrice MOUSSET <fabrice.mousset@laposte.net>"

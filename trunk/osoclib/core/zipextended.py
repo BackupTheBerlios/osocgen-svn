@@ -27,7 +27,7 @@ __versionTime__ = "xx/xx/xxxx"
 __author__ = "Fabrice MOUSSET <fabrice.mousset@laposte.net>"
 
 from zipfile import ZipFile, is_zipfile, ZipInfo, ZIP_DEFLATED
-import os.path as dir
+import os.path as ospath
 import os
 import glob
 import time
@@ -56,6 +56,7 @@ def is_matching_patterns(patterns, item):
             return True
     return False
 
+# pylint: disable-msg=W0622
 def filter(items, patterns):
     """
     Retourne deux sous-listes de la liste-fichiers LST :
@@ -69,6 +70,7 @@ def filter(items, patterns):
               if is_matching_patterns(re_patterns, item)
               ]
 
+    # pylint: disable-msg=W0631
     antiresult = [item for item in items
                         if not item in result]
     result.sort()
@@ -100,14 +102,14 @@ class ExtendedZipFile(ZipFile):
             self.writestr(zdir,'')
 
     def addDirectory(self, path, zippath=''):
-        def _zipdirectory(zfile, path, zippath):
-            for file in glob.glob(path+'\\*'):
-                filename = dir.join(zippath,dir.basename(file))
-                if dir.isdir(file):
+        def _zipdirectory(zf, path, zippath):
+            for fname in glob.glob(path+'\\*'):
+                filename = ospath.join(zippath,ospath.basename(fname))
+                if ospath.isdir(fname):
                     self.createDirectory(filename)
-                    _zipdirectory(zfile, file, filename)
+                    _zipdirectory(zf, fname, filename)
                 else:
-                    zfile.write(file, filename)
+                    zf.write(fname, filename)
 
         _zipdirectory(self, path, normDirname(zippath))
 
@@ -116,7 +118,7 @@ class ExtendedZipFile(ZipFile):
             destination = os.getcwd()  ## on dezippe dans le repertoire locale
 
         for zfile in self.namelist():  ## On parcourt l'ensemble des fichiers de l'archive
-            filename = dir.join(destination, zfile)
+            filename = ospath.join(destination, zfile)
             if zfile.endswith('/'):   ## S'il s'agit d'un repertoire, on se contente de creer le dossier
                 try:
                     os.makedirs(filename)
@@ -215,7 +217,7 @@ class ExtendedZipFile(ZipFile):
 
 class ZipString(ExtendedZipFile):
     def __init__(self, zip_string):
-        buffer = StringIO()
+        iobuffer = StringIO()
         if zip_string:
             if is_zipfile(zip_string):
                 fp = open(zip_string, "rb")
@@ -223,12 +225,12 @@ class ZipString(ExtendedZipFile):
                     data = fp.read(1024 * 8)
                     if not data:
                         break
-                    buffer.write(data)
+                    iobuffer.write(data)
                 fp.close()
             else:
-                buffer.write(zip_string)
+                iobuffer.write(zip_string)
 
-        ZipFile.__init__(self, buffer, 'a', compression=ZIP_DEFLATED)
+        ExtendedZipFile.__init__(self, iobuffer, 'a', compression=ZIP_DEFLATED)
 
     def saveAs(self, filename):
         self.flush()
