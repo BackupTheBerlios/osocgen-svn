@@ -24,11 +24,7 @@ __license__ = "GPLv3"
 __copyright__ = "Copyright 2009 Fabrice MOUSSET"
 
 import os.path as path
-from StringIO import StringIO
-from entity import Entity, Instance
-from utils import make_header, _VHDL_ARCHITECTURE, to_bit_vector
-from utils import to_comment, signal_name, port_declaration
-
+from utils import make_header, _VHDL_ARCHITECTURE, to_comment
 
 class TestbenchError(Exception):
     """Exception raised when errors detected during test bench creation.
@@ -103,8 +99,8 @@ def make_testbench(project):
             reset_min = clk.frequency
             
     const_def.append("  constant RESET_ON : time := 1 sec / %d;" % 
-                     (reset_min / 2))
-    const_def.append("  constant RESET_OFF : time := RESET_ON * 3;")
+                     (reset_min * 3))
+    const_def.append("  constant RESET_OFF : time := RESET_ON * 5;")
     vhdl_fd.write("\n".join(const_def))
     vhdl_fd.write("\n")
     

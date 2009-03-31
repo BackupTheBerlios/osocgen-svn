@@ -68,7 +68,7 @@ Architecture RTL of syscon is
 
 begin
 
-  sync_reset <= reset;
+  reset_sync <= reset;
 
   -- ---------------------------------------------------------------------------
   --  RESET signal generator process.
@@ -76,10 +76,10 @@ begin
   process(clk)
   begin
     if(rising_edge(clk)) then
-      dly <= ( not(reset_ext) and     delay  and not(reset) )
-          or ( not(reset_ext) and not(delay) and     reset  );
+      delay <= ( not(reset_ext) and     delay  and not(reset) )
+            or ( not(reset_ext) and not(delay) and     reset  );
 
-      rst <= ( not(reset_ext) and not(delay) and not(reset) );
+      reset <= ( not(reset_ext) and not(delay) and not(reset) );
     end if;
   end process;
 
@@ -128,4 +128,4 @@ def make_syscon(base_dir):
     vhdl_file.write(hdl.getvalue())
     vhdl_file.close()
 
-    return Entity(hdl)
+    return Entity(hdl), "syscon.vhd"

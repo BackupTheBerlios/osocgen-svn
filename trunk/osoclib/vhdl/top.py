@@ -83,17 +83,13 @@ def port_matrix(iface, signal):
 
     names.append(iface._parent.name)
     port_name = "_".join(names)
-    
-    port_type = "%s %s" % (signal[1][0], 
-                           combine_type(signal[1][1], 
-                                        iface.port_width(signal[0].name))
-                           )
-    
+        
     # Connecting signals to interface
     iface.setPortCnx(name, port_name)    
 
     # Returning value
-    return (port_name.lower(), port_type.lower())
+    port_type = combine_type(signal[1][1], iface.port_width(signal[0].name))
+    return (port_name.lower(), (signal[1][0], port_type.lower()))
 
 def mk_signal(iface, signal, vhdl):
     name = "_".join([iface._parent.name, signal])
@@ -108,8 +104,10 @@ def make_top(project):
     """
 
     # 1. Create RESET synchronization module
+    hdl_files = []
     try:
-        clk_hdl = make_syscon(project.path)
+        clk_hdl, fname = make_syscon(project.path)
+        hdl_files.append(fname)
     except SysconError, e:
         raise TopError(e.message)
     
@@ -140,15 +138,23 @@ def make_top(project):
                     iface.setPortCnx(xml.name, rst_name)
 
     # 3. Create address decoder module for each wishbone master interface
+    intercons = []
     try:
-        intercons = [make_intercon(name, project.path, ifaces[0][0], ifaces[1]) 
-                             for (name, ifaces) in project.wires.iteritems()
-                    ]
+        for (name, ifaces) in project.wires.iteritems():
+            masters, slaves = ifaces[0], ifaces[1]
+            if len(masters) > 1:
+                raise TopError("Cannot generate multi-master '%s' bus." % name)
+            master = masters[0]
+            entity, fname = make_intercon(name, project.path, master, slaves)
+            intercons.append(entity)
+            hdl_files.append(fname)
+            
     except InterconError, e:
         raise TopError(e.message)
 
     # 4. Now we create top file
     fname = ("%s.vhd" % project.name)
+    hdl_files.append(fname)
     try:
         top_file = open(path.join(project.path, fname), "w")
     except IOError:
@@ -161,13 +167,14 @@ def make_top(project):
     entity += "  port (\n"
     entity += "    -- Clock(s) signals\n"
 
-    entity_ports =  dict((name, "std_logic")
+    entity_clocks =  dict((name, "std_logic")
                             for name, _ in project.clocks.iteritems()
                         )
     ports = ["    %s : in %s" % (key, value) 
-                for key, value in entity_ports.iteritems()
+                for key, value in entity_clocks.iteritems()
             ]
     
+    entity_ports = {}
     entity += "    reset : in std_logic;\n"
     entity += "\n".join(ports)
     
@@ -176,12 +183,15 @@ def make_top(project):
         iface_ports =  dict(port_matrix(iface, signal) 
                                 for _, signal in iface.signals.iteritems()
                                 )
-        entity_ports.update(iface_ports)
-        ports = ["    %s : %s" % (key, value) 
+        ports = ["    %s : %s %s" % (key, value[0], value[1]) 
                     for key, value in iface_ports.iteritems()
                 ]
        
         entity += ";\n".join(ports)
+        
+        # Add port signals to port list
+        entity_ports.update(dict((key, value[1]) 
+                    for key, value in iface_ports.iteritems()))
         
     entity += "\n  );"
     entity += "\nend entity;\n"
@@ -202,12 +212,16 @@ def make_top(project):
     top_file.write(to_comment(['Components declaration']))
     for _, cp in project.components.iteritems():
         top_file.write(cp.asEntity().asComponent())
-        top_file.write("\n\n");
+        top_file.write("\n\n")
     
     # 2.3 Add Intercons declaration
     for cp in intercons:
         top_file.write(cp.asComponent)
-        top_file.write("\n\n");
+        top_file.write("\n\n")
+
+    # 2.4 Add Syscon declaration
+    top_file.write(clk_ip.asComponent)
+    top_file.write("\n\n")
 
     # 3. Building system
     top_file.write("\nbegin\n")
@@ -215,24 +229,28 @@ def make_top(project):
     # 3.1 Add IPs top modules
     for _, cp in project.instances.iteritems():
         top_file.write(str(cp))
-        top_file.write("\n\n");
+        top_file.write("\n\n")
 
     # 3.2 Add intercons
     for cp in intercons:
         top_file.write(str(cp))
-        top_file.write("\n\n");
+        top_file.write("\n\n")
         
     # 3.3 Add reset synchronization modules
     for name, _ in project.clocks.iteritems():
         clk_ip.setPort("clk", name)
         clk_ip.setPort("reset_sync", name + "_sync_reset")
+        clk_ip.name = "syscon_" + name
         top_file.write(str(clk_ip))
-        top_file.write("\n\n");
+        top_file.write("\n\n")
     
     top_file.write("\nend architecture;\n")
     top_file.close()
     
     entity = Entity(StringIO(entity))
-    instance = Instance(entity)
-    
-    return instance
+
+    # 4 Saving settings into project
+    project.port_list = entity_ports
+    project.clock_list = entity_clocks
+    project.hdl_files.extend(hdl_files)
+    project.entity = Instance(entity)

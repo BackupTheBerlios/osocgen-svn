@@ -181,7 +181,8 @@ class InterconRegisterIface(object):
         
         # Compute slave address decoding settings
         self.addr_low = self.sel_base + slave.addr_width
-        self.base_addr = slave.offset // (2**(self.addr_low-1))
+        self.base_addr = slave.offset // (2**self.addr_low) 
+        self.base_addr //= self.master_byte_sel
     
     @property
     def addr_sel(self):
@@ -265,7 +266,7 @@ class InterconRegisterIface(object):
         else:
             addr = "%s(%d)" % (addr, self.addr_low-1)
 
-        name = signal_name(self.slave, "adr_i")
+        name = signal_name(self.slave, "adr_o")
         return ("%s <= %s when (%s = '1') else %s" % (name, addr, self.sel, 
                                                        addr_null)) 
 
@@ -285,8 +286,8 @@ class InterconRegisterIface(object):
         if s_dat_width == 0:
             return None
 
-        s_name = signal_name(self.slave, "dat_i")
-        m_name = "wbs_master_dat_o"
+        s_name = signal_name(self.slave, "dat_o")
+        m_name = "wbs_master_dat_i"
         dat_nul = "(others => '0')"
 
         if s_dat_width > m_dat_width:
@@ -313,14 +314,13 @@ class InterconRegisterIface(object):
         if m_dat_width == 0 or s_dat_width == 0 or self.slave_byte_sel <= byte:
             return None
 
-        s_name = signal_name(self.slave, "dat_o")
+        s_name = signal_name(self.slave, "dat_i")
         sel = "master_sel%d" % (8*(2**(self.slave_byte_sel-1)))
         if self.slave_byte_sel == 1:
             return [("%s when (%s='1' and %s='1')" % (s_name, self.sel, sel))]
     
         return ["%s(%u downto %u) when (%s='1' and %s(%d)='1')" % 
-                (s_name, (byte + idx + 1) * 8, (byte + idx) * 8, self.sel,
-                 sel, idx)
+                (s_name, idx*8+7, idx*8, self.sel, sel, idx)
                     for idx in range(byte, self.slave_byte_sel, 
                                      self.master_byte_sel)
                 ]
@@ -399,11 +399,9 @@ def make_intercon(name, base_dir, master, slaves):
                                 for _, signal in slave.signals.iteritems()
                                 )
         entity_ports.update(slave_ports)
-        ports = ["    %s : %s" % (key, value[0]) 
-                    for key, value in slave_ports.iteritems()
-                ]
-       
-        entity += ";\n".join(ports)
+        entity += ";\n".join(["    %s : %s" % (key, value[0]) 
+                              for key, value in slave_ports.iteritems()
+                              ])
 
     entity += "\n  );"
     entity += "\nend entity;\n"
@@ -439,7 +437,7 @@ def make_intercon(name, base_dir, master, slaves):
         vhdl_fd.write("  signal slave_sel : std_logic_vector(%u downto 0);\n" % 
                       (len(slaves) - 1))
     else:
-        vhdl_fd.write("  slave_sel : std_logic;\n") 
+        vhdl_fd.write("  signal slave_sel : std_logic;\n") 
 
     # 3.1 Adding bytes selection signals
     for idx, sels in enumerate(master_sels):
@@ -505,7 +503,7 @@ def make_intercon(name, base_dir, master, slaves):
                                             if slave.readdata_ok(idx)
                     ]
             vhdl = [elmt for elmt in reduce(list.__add__, vhdl) if elmt != None]
-            name = "wbs_master_dat_o(%d downto %d)" % ((idx + 1) * 8, idx * 8)
+            name = "wbs_master_dat_o(%d downto %d)" % ((idx*8)+7, idx*8)
             if len(vhdl) == 0:
                 vhdl_fd.write("  %s <= (others => '0');\n" % name)
             else:
@@ -529,4 +527,4 @@ def make_intercon(name, base_dir, master, slaves):
     instance.setPorts(ports)
 
     # 10. Returning instance
-    return instance
+    return instance, base_name+".vhd"

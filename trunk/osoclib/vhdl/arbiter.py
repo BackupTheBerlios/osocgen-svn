@@ -105,4 +105,4 @@ def make_arbiter(name, base_dir, masters, slave=None):
     # 9. Adding signals interconnection
     
     # 10. Returning instance
-    return instance
+    return instance, ("%s.vhd" % base_name)
