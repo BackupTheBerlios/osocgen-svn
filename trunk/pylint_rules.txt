@@ -50,7 +50,8 @@ load-plugins=
 #enable-msg=
 
 # Disable the message(s) with the given id(s).
-#disable-msg=
+# W0511 = Used when a warning note as FIXME or XXX is detected.
+disable-msg=W0511
 
 [REPORTS]
 # Set the output format. Available formats are text, parseable, colorized, msvs
