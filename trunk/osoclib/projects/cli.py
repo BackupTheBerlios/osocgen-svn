@@ -1,6 +1,6 @@
 #! /usr/bin/python
 # -*- coding: utf-8 -*-
-#-----------------------------------------------------------------------------
+#===============================================================================
 # Name:     cli.py
 # Purpose:  Command line interpreter for Projects manipulation
 #
@@ -8,49 +8,136 @@
 #
 # Created:  2008/05/21
 # License:  GPLv3 or newer
-#-----------------------------------------------------------------------------
+#===============================================================================
 # Last commit info:
-# ----------------------------------
+# 
 # $LastChangedDate:: xxxx/xx/xx xx:xx:xx $
 # $Rev::                                 $
 # $Author::                              $
-#-----------------------------------------------------------------------------
+#===============================================================================
 # Revision list :
 #
 # Date       By        Changes
 #
-#-----------------------------------------------------------------------------
+#===============================================================================
 
-__doc__ = "Command Line Interface for Orchestra projects manipulation."
+"Command Line Interface for Orchestra projects manipulation."
+
 __version__ = "1.0.0"
 __versionTime__ = "xx/xx/xxxx"
 __author__ = "Fabrice MOUSSET <fabrice.mousset@laposte.net>"
 
 import os
-import os.path as dir
+import os.path as path
 
-from core import BaseCli, ArgsSet, Settings
-from projects import *
-from components import *
+from core import BaseCli, ArgsSet, Settings, purge_dir, format_table
+from projects import Project, ProjectError
+from components import Component, find_component
 
+NAME_ARGS = ArgsSet(name=None)
 FILE_ARGS = ArgsSet(name=None, force=False)
 COMPONENT_ARGS = ArgsSet(name=None, base=None)
-CREATION_ARGS = ArgsSet(name="New Project", version="1.0", author="", board="apf9328", description=None)
-EDITION_ARGS = ArgsSet(name=None, version=None, author=None, board=None, description=None)
+CREATION_ARGS = ArgsSet(name="New Project", version="1.0", author="", target="apf9328", description=None)
+EDITION_ARGS = ArgsSet(name=None, version=None, author=None, target=None, description=None)
 INSTANCE_ARGS = ArgsSet(name=None)
 CLOCK_ARGS = ArgsSet(name=None, frequency=50000000, type="static")
 GENERIC_ARGS = ArgsSet(name=None, value=None)
 INTERFACE_ARGS = ArgsSet(name=None, offset=None, link=None)
+WIRE_ARGS = ArgsSet(name=None, type=None)
 
+# Getting access to application settings
 settings = Settings()
 
-class ProjectComponentGenericCli(BaseCli):
+def extract_name(arg):
+    args = NAME_ARGS.parse(arg)
+    if args:
+        return args.name
+    return arg
+
+class ProjectsWireCli(BaseCli):
+    project = None
+    def do_list(self, arg):
+        """\nDisplay all wires
+        """
+        # pylint: disable-msg=W0613
+        pass
+#        titles = ["name", "value"]
+#        rows = []
+#        for gen in self.project.routes.iteritems():
+#            rows.append([gen.name, gen.value])
+#        self.write("\n".join(format_table(titles, rows)))
+#        self.write("\n")
+        
+    def do_edit(self, arg):
+        """\nChange wire settings.
+        
+        edit name=<string> type=<string>
+        
+            name - wire name
+            type - wire type
+        """
+        args = WIRE_ARGS.parse(arg)
+        try:
+            if args.name:
+                (wire, _) = settings.active_project.wires.getElement(args.name)
+                if wire:
+                    wire.type = args.type
+                    self.write("Wire '%s' type changed to '%s'.\n" % 
+                               (wire.name, wire.value))
+                else:
+                    self.write("Wire '%s' not found, operation canceled.\n" %
+                                args.name)
+        except AttributeError:
+            self.write("*** Arguments error, operation canceled.\n")
+        
+    def do_add(self, arg):
+        """\nAdd new wire to project.
+        
+        add name=<string> type=<string>
+        
+            name - wire name
+            type - wire type
+        """
+        args = WIRE_ARGS.parse(arg)
+        if args:
+            try:
+                settings.active_project.addWire(args.name, args.value)
+            except ProjectError, e:
+                self.write(e.message)
+            else:
+                self.write("Wire '%s' successfully added.\n" % (args.name))
+        else:
+            self.write("*** Arguments error, operation canceled.\n")
+
+    def do_del(self, arg):
+        """\nRemove wire from project.
+        
+        del [name=]<string>
+        
+            name - wire name
+        """
+        name = extract_name(arg)
+        if name:
+            try:
+                settings.active_project.removeWire(name)
+            except ProjectError, e:
+                self.write(e.message)
+            else:
+                self.write("Wire '%s' successfully removed.\n" % name)
+        else:
+            self.write("*** Arguments error, operation canceled.\n")
+            
+class ProjectsComponentGenericCli(BaseCli):
     def do_list(self, arg):
         """\nDisplay all component instance generics settings
         """
-        for gennode in self.generics:
-            gen = gennode[0]
-            self.write("name=%s value=%s\n" % (gen.name, gen.value))
+        # pylint: disable-msg=W0613
+        titles = ["name", "value"]
+        rows = []
+        for gen in self.generics.iteritems():
+            rows.append([gen.name, gen.value])
+        self.write("\n".join(format_table(titles, rows)))
+        self.write("\n")
         
     def do_edit(self, arg):
         """\nEdit generic settings.
@@ -64,22 +151,26 @@ class ProjectComponentGenericCli(BaseCli):
         args = GENERIC_ARGS.parse(arg)
         try:
             if args.name and args.value:
-                (gen, subelem) = self.generics.getElement(args.name)
+                (gen, _) = self.generics.getElement(args.name)
                 if gen:
                     gen.value = args.value
                     self.write("Generic '%s' changed to '%s'.\n" % (gen.name, gen.value))
                 else:
                     self.write("Generic '%s' not found, operation canceled.\n" % args.name)
-        except:
+        except AttributeError:
             self.write("*** Arguments error, operation canceled.\n")
         
-class ProjectComponentInterfaceCli(BaseCli):
+class ProjectsComponentInterfaceCli(BaseCli):
     def do_list(self, arg):
         """\nDisplay all component instance interfaces settings
         """
-        for ifacenode in self.interfaces:
-            iface = ifacenode[0]
-            self.write("name=%s offset=%s link=%s\n" % (iface.name, iface.offset, iface.link))
+        # pylint: disable-msg=W0613
+        titles = ["name", "offset", "link"]
+        rows = []
+        for iface in self.interfaces.iteritems():
+            rows.append([iface.name, iface.offset, iface.link])
+        self.write("\n".join(format_table(titles, rows)))
+        self.write("\n")
 
     def do_edit(self, arg):
         """\nEdit interface settings.
@@ -94,14 +185,14 @@ class ProjectComponentInterfaceCli(BaseCli):
         args = INTERFACE_ARGS.parse(arg)
         try:
             if args.name and (args.offset or args.link):
-                (iface, subelement) = self.interfaces.getElement(args.name)
+                (iface, _) = self.interfaces.getElement(args.name)
                 if iface:
                     if(args.offset):
                         iface.offset = args.offset
                     else:
                         iface.offset = ""
                     if(args.link):
-                        iface.link = iface.link
+                        iface.link = args.link
                     else:
                         iface.link = ""
                         
@@ -110,21 +201,26 @@ class ProjectComponentInterfaceCli(BaseCli):
                     self.write("Interface '%s' not found, operation canceled.\n" % args.name)
                     
                 return
-        except:
+        except AttributeError:
             pass
         
         self.write("*** Arguments error, operation canceled.\n")
 
-class ProjectComponentCli(BaseCli):
+class ProjectsComponentCli(BaseCli):
     def do_dir(self, arg):
         """\nDisplay available components.
         """
+        # pylint: disable-msg=W0613
+        titles = ["name", "version", "category"]
+        rows = []
         comp_dir = settings.components_dir
         for fname in os.listdir(comp_dir):
-            name = dir.join(comp_dir, fname)
-            if(dir.isfile(name)):
+            name = path.join(comp_dir, fname)
+            if(path.isfile(name)):
                 cp = Component(name)
-                self.write("Name = %s, Version = %s, Category = %s\n" % (cp.name, cp.version, cp.category))
+                rows.append([cp.name, cp.version, cp.category])
+        self.write("\n".join(format_table(titles, rows)))
+        self.write("\n")
 
     def do_xml(self, arg):
         """\nDisplay project components in XML format.
@@ -133,14 +229,19 @@ class ProjectComponentCli(BaseCli):
         
             arg = optional instance name
         """
+        # pylint: disable-msg=W0613
         self.write(settings.active_project.asXML())
 
     def do_list(self, arg):
         """\nDisplay all component instances from active project.
         """
-        for cpnode in settings.active_project.components:
-            cp = cpnode[0]
-            self.write("name = %s, base = %s\n"%(cp.name,cp.base))
+        # pylint: disable-msg=W0613
+        titles = ["name", "base"]
+        rows = []
+        for cp in settings.active_project.components.iteritems():
+            rows.append([cp.name, cp.base])
+        self.write("\n".join(format_table(titles, rows)))
+        self.write("\n")
 
     def do_add(self, arg):
         """\nAdd component to current project.
@@ -153,7 +254,7 @@ class ProjectComponentCli(BaseCli):
         args = COMPONENT_ARGS.parse(arg)
         if args:
             try:
-                cp = getMatchingComponent(settings.components_dir, args.base)
+                cp = find_component(settings.components_dir, args.base)
 
                 if cp is None:
                     self.write("*** No component '%s' found, component addition canceled\n" % args.base)
@@ -162,7 +263,7 @@ class ProjectComponentCli(BaseCli):
             except ProjectError, e:
                 self.write(e.message)
             else:
-                self.write("Component '%s' successfully added as '%s'.\n" % (args.base, dir.basename(args.name)))
+                self.write("Component '%s' successfully added as '%s'.\n" % (args.base, path.basename(args.name)))
         else:
             self.write("*** Arguments extraction error, component addition canceled.\n")
 
@@ -175,11 +276,7 @@ class ProjectComponentCli(BaseCli):
             <string> is instance name to remove.
         """
 
-        name = arg
-        try:
-            name = INSTANCE_ARGS.parse(arg).name
-        except:
-            pass
+        name = extract_name(arg)
             
         if name:
             try:
@@ -230,7 +327,7 @@ class ProjectComponentCli(BaseCli):
         name = None
         try:
             name = args[0]
-        except:
+        except IndexError:
             pass
                 
         if name:
@@ -243,9 +340,9 @@ class ProjectComponentCli(BaseCli):
         
         if cp:
             if len(cp[1]["generics"]) > 0:
-                cli = ProjectComponentGenericCli(self)
+                cli = ProjectsComponentGenericCli(self)
                 cli.generics = cp[1]["generics"]
-                cli.setPrompt("generics")
+                cli.setPrompt("generics@%s"%name.lower())
                 arg = " ".join(args[1:])
                 if len(arg) > 0:
                     line = cli.precmd(arg)
@@ -273,7 +370,7 @@ class ProjectComponentCli(BaseCli):
         name = None
         try:
             name = args[0]
-        except:
+        except IndexError:
             pass
         
         if name:
@@ -286,9 +383,9 @@ class ProjectComponentCli(BaseCli):
 
         if cp:
             if len(cp[1]["interfaces"]) > 0:
-                cli = ProjectComponentInterfaceCli(self)
+                cli = ProjectsComponentInterfaceCli(self)
                 cli.interfaces = cp[1]["interfaces"]
-                cli.setPrompt("interfaces")
+                cli.setPrompt("interfaces@%s"%name.lower())
                 arg = " ".join(args[1:])
                 if len(arg) > 0:
                     line = cli.precmd(arg)
@@ -301,20 +398,65 @@ class ProjectComponentCli(BaseCli):
                 self.write("*** Instance named '%s' hasn't interfaces, operation canceled.\n" % name)
         else:
             self.write("*** No component instance named '%s' found, interfaces manipulation canceled.\n" % name)
-    
+
+class ProjectsClockCli(BaseCli):
+    def do_list(self, arg):
+        """\nDisplay all defined clock domains for this design.
+        """
+        # pylint: disable-msg=W0613
+        titles = ["name", "frequency", "type"]
+        rows = []
+        for clock in settings.active_project.clocks.iteritem():
+            rows.append([clock.name, clock.frequency, clock.type])
+        self.write("\n".join(format_table(titles, rows)))
+        self.write("\n")
+            
+    def do_add(self, arg):
+        """\nAdd clock domain to current project.
+
+        add name=<string> frequency=<integer> type=static|pll
+
+            name  = new clock domain name.
+            frequency  = clock frequency in Hertz.
+            type = 
+        """
+        args = CLOCK_ARGS.parse(arg)
+        if args:
+            try:
+                settings.active_project.addClock(args.name, args.frequency, args.type)
+            except ProjectError, e:
+                self.write(e.message) 
+        else:
+            self.write("*** Arguments extraction error, clock domain addition canceled.\n")
+
+
+    def do_del(self, arg):
+        """\nRemove component instance from current project.
+
+        del <string>
+
+            <string> is instance name to remove.
+        """
+
+        name = extract_name(arg)
+            
+        if name:
+            try:
+                settings.active_project.removeClock(name)
+            except ProjectError, e:
+                self.write(e.message)
+            else:
+                self.write("Clock '%s' successfully removed.\n" % name)
+        else:
+            self.write("*** Argument error, clock deletion canceled.\n")
+            
 class ProjectsCli(BaseCli):
     def do_xml(self, arg):
         """\nDisplay XML description from current project or from specified project.
         """
-
-        name = arg
-        try:
-            name = FILE_ARGS.parse(arg).name
-        except:
-            pass
-
+        name = extract_name(arg)
         if name:
-            cp = Component(filename=dir.join(settings.components_dir, name))
+            cp = Component(filename=path.join(settings.components_dir, name))
         else:
             cp = settings.active_project
 
@@ -324,10 +466,10 @@ class ProjectsCli(BaseCli):
     def do_create(self, arg):
         """\nCreate a new project from scratch.
         
-        create name=<string> [board=<string>] [version=<string>] [author=<string>]
+        create name=<string> [target=<string>] [version=<string>] [author=<string>]
 
             name     = new project name. Default = New Project.
-            board    = project target board. Default = APF9328.
+            target   = project target FPGA/CPLD. Default = APF9328.
             version  = project version. Default = 1.0.
             author   = component category. Default = User Component.
         """
@@ -337,7 +479,7 @@ class ProjectsCli(BaseCli):
             proj.name = args.name
             proj.version =  args.version
             proj.category = args.category
-            proj.board = args.board
+            proj.target = args.target
             self.write("New project created.\n")
             settings.active_project = proj
         else:
@@ -352,25 +494,22 @@ class ProjectsCli(BaseCli):
                        full name not specified.
         """
 
-        try:
-            name = FILE_ARGS.parse(arg).name
-        except:
-            name = arg
+        name = extract_name(arg)
 
         # Append project sub-directory if no path specified
-        fpath, fname = dir.split(name)
+        fpath, fname = path.split(name)
         if not fpath:
-            name = dir.join(settings.project_dir, fname)
+            name = path.join(settings.project_dir, fname)
         
         # Append default extension if not present
         if not name.lower().endswith(".prj"):
             name += ".prj"
             
         # Open project if file exist
-        if(dir.isfile(name)):
+        if(path.isfile(name)):
             cp = Project(name)
             settings.active_project = cp
-            self.write("Project '%s', version '%s', board '%s' ready for edition.\n" % (cp.name, cp.version, cp.board))
+            self.write("Project '%s', version '%s', target '%s' ready for edition.\n" % (cp.name, cp.version, cp.target))
         else:
             self.write("*** Project '%s' not found. Edition canceled.\n" % name)
 
@@ -379,6 +518,9 @@ class ProjectsCli(BaseCli):
     def do_close(self, arg):
         """\nCancel current component edition.
         """
+        # pylint: disable-msg=W0613
+        if settings.active_project:
+            self.write("*** Project '%s' is closed, changes are lost.\n" % settings.active_project.name)
         settings.active_project = None
 
     def do_save(self, arg):
@@ -402,7 +544,7 @@ class ProjectsCli(BaseCli):
                 args = FILE_ARGS.parse(arg)
                 name = args.name
                 force = args.force
-            except:
+            except AttributeError:
                 self.write("*** Arguments parsing error. Project saving canceled.\n")
                 return
         
@@ -410,7 +552,7 @@ class ProjectsCli(BaseCli):
             self.write("*** No file name specified. Project saving canceled.\n")
             return
             
-        fpath, fname = dir.split(name)
+        fpath, fname = path.split(name)
         
         # Append default extension if not present
         if not fname.lower().endswith(".prj"):
@@ -423,14 +565,14 @@ class ProjectsCli(BaseCli):
 
         # Append project sub-directory if no path specified
         if not fpath:
-            name = dir.join(settings.project_dir, fname)
+            name = path.join(settings.project_dir, fname)
         else:
-            name = dir.join(fpath, fname)
+            name = path.join(fpath, fname)
 
         # Check if new file name
         if name != settings.active_project.filename:
             # If file already exist, only overwrite if authorization is given 
-            if dir.exists(name) and not force:
+            if path.exists(name) and not force:
                 self.write("*** A project named '%s' already exists. Project saving canceled.\n" % name)
                 return
             
@@ -477,21 +619,21 @@ class ProjectsCli(BaseCli):
         else:
             self.write("*** No open project.\n")
 
-    def do_board(self, arg):
-        """\nDisplay or modify current project board.
+    def do_target(self, arg):
+        """\nDisplay or modify current project target.
         
-        board [<string>]
+        target [<string>]
         
-            <string> = New board.
+            <string> = New target.
         """
         if settings.active_project:
             if arg:
                 arg = str(arg).strip()
-                old = settings.active_project.board
+                old = settings.active_project.target
                 settings.active_project.name = arg
-                self.write("Board changed from '%s' to '%s'.\n" % (old, arg))
+                self.write("target changed from '%s' to '%s'.\n" % (old, arg))
             else:
-                self.write("%s\n" % settings.active_project.board)
+                self.write("%s\n" % settings.active_project.target)
         else:
             self.write("*** No open project.\n")
 
@@ -508,7 +650,7 @@ class ProjectsCli(BaseCli):
             self.write('*** No open project, action canceled.\n')
             return
 
-        cli = ProjectComponentCli(self)
+        cli = ProjectsComponentCli(self)
         cli.setPrompt("components")
         arg = str(arg)
         if len(arg) > 0:
@@ -522,12 +664,21 @@ class ProjectsCli(BaseCli):
     def do_check(self, arg):
         """\nCheck current project for errors.
         """
+        # pylint: disable-msg=W0613
         if not settings.active_project:
             self.write('*** No open project, action canceled.\n')
             return
         
-        # Verification steps
-        # 1. 
+        errors = settings.active_project.check(settings.components_dir)
+        if len(errors) == 0:
+            self.write("No errors.\n")
+            return
+        
+        for category,errors in errors.iteritems():
+            self.write('%s:\n' % category)
+            for error in errors:
+                self.write('  %s\n' % error)
+        
     def do_compile(self, arg):
         """\nGenerate System on Chip.
         
@@ -536,20 +687,57 @@ class ProjectsCli(BaseCli):
             no arg -> compile project in default directory.
             arg    -> compile in specified directory. 
         """
+        # pylint: disable-msg=W0613
         if not settings.active_project:
             self.write('*** No open project, action canceled.\n')
             return
 
+        # Compilation steps
+        self.write("INFO: Starting project '%s' compilation.\n" % settings.active_project.name)
+        if not settings.active_project.filename:
+            self.write("*** Project must be saved before compilation.")
+            return
+        
+        # 1. Verify design parameters (check)
+        errors = settings.active_project.check(settings.components_dir)
+        if len(errors) > 0:
+            self.write("*** Errors in project detected, compilation canceled.\n")
+            return
+        
+        self.write("INFO: No errors detected.\n")
+        
+        # 2. Create/purge project directory
+        out_dir = path.join(path.dirname(settings.active_project.filename), "output")
+        if path.exists(out_dir):
+            purge_dir(out_dir)
+        else:        
+            os.makedirs(out_dir)
+        
+        # 3. Call compilation routine
+        settings.active_project.compile(settings.components_dir, out_dir)
     
-    def do_routes(self, arg):
-        """\nSystem on Chip routes manipulation commands.
+    def do_wires(self, arg):
+        """\nSystem on Chip wires manipulation commands.
         
         routes [arg]
 
             no arg -> launch SoC routes management shell.
-            arg    -> execture [arg] SoC routes command.
+            arg    -> execute [arg] SoC routes command.
         """
-        pass
+        if not settings.active_project:
+            self.write('*** No open project, action canceled.\n')
+            return
+
+        cli = ProjectsWireCli(self)
+        cli.setPrompt("wires")
+        arg = str(arg)
+        if len(arg) > 0:
+            line = cli.precmd(arg)
+            cli.onecmd(line)
+            cli.postcmd(True, line)
+        else:
+            cli.cmdloop()
+            self.stdout.write("\n")
 
     def do_clocks(self, arg):
         """\nSystem on Chip clocks manipulation commands.
@@ -557,6 +745,19 @@ class ProjectsCli(BaseCli):
         clocks [arg]
         
             no arg -> launch SoC clocks management shell.
-            arg    -> execture [arg] SoC clocks command.
+            arg    -> execute [arg] SoC clocks command.
         """
-        pass
+        if not settings.active_project:
+            self.write('*** No open project, action canceled.\n')
+            return
+
+        cli = ProjectsClockCli(self)
+        cli.setPrompt("clocks")
+        arg = str(arg)
+        if len(arg) > 0:
+            line = cli.precmd(arg)
+            cli.onecmd(line)
+            cli.postcmd(True, line)
+        else:
+            cli.cmdloop()
+            self.stdout.write("\n")
