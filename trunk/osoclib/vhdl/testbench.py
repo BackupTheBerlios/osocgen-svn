@@ -42,11 +42,10 @@ class TestbenchError(Exception):
     def __str__(self):
         return self.message
 
-def make_simulation(project, hdl_files):
+def make_simulation(project):
     """Create simulation project for ModelSim
 
         @param project: System on Chip project settings
-        @param hdl_files: HDL files used by project 
     """
     base_name = ("%s.do" % project.name)
     filename = path.join(project.path, base_name)
@@ -57,7 +56,7 @@ def make_simulation(project, hdl_files):
         raise TestbenchError("Can't create %s file." % base_name)
 
     simu_fd.write("vlib WORK\n\n")
-    files = ["vcom -93 %s\n" % name for name in hdl_files]
+    files = ["vcom -93 %s\n" % name for name in project.hdl_files]
     simu_fd.write("".join(files))
     simu_fd.write("\nvsim %s_tb\n" % project.name)
     simu_fd.close()
@@ -92,15 +91,27 @@ def make_testbench(project):
     vhdl_fd.write(to_comment(['Project constants']))
     reset_min = 0
     const_def = []
+    
+    # 3.1 Define constant for each clock frequency
     for clk in project.soc.clocks.iteritems():
         const_def.append("  constant %s_PERIOD : time := 1 sec / %d;" % 
                           (clk.name.upper(), clk.frequency))
         if clk.frequency < reset_min or reset_min == 0:
             reset_min = clk.frequency
-            
+    
+    # 3.2 Define reset timing
     const_def.append("  constant RESET_ON : time := 1 sec / %d;" % 
                      (reset_min * 3))
     const_def.append("  constant RESET_OFF : time := RESET_ON * 5;")
+    
+    # 3.3 Define constant for each slave interface base address
+    for inst in project.instances.itervalues():
+        for iface in inst.interfaces.itervalues():
+            if iface.type == "WBS":
+                const_def.append("  constant %s_%s_BASE_ADDR : integer := %d;" % 
+                                 (inst.name.upper(), iface.name.upper(),
+                                  iface.offset))
+    
     vhdl_fd.write("\n".join(const_def))
     vhdl_fd.write("\n")
     
@@ -128,7 +139,7 @@ def make_testbench(project):
 
     vhdl_fd.write("\n\nbegin\n")
     
-    # 6. Adding clocks and reset signals
+    # 6. Clocks and reset signals generation
     vhdl_fd.write("  reset <= '0', '1' after RESET_ON, '0' after RESET_OFF;\n")
     vhdl_fd.write("".join(["  %s <= not %s after %s_PERIOD/2;\n" % 
                            (name, name, name)
@@ -138,7 +149,7 @@ def make_testbench(project):
     # 7. Adding SoC Top entity
     vhdl_fd.write(str(project.entity))
     
-    # 8. Closing module
+    # 8. Closing testbench
     vhdl_fd.write("end architecture;\n")
     vhdl_fd.close()
     

@@ -7,7 +7,7 @@
 # Author:   Fabrice MOUSSET
 #
 # Created:  2008/06/13
-# Licence:  GPLv3 or newer
+# License:  GPLv3 or newer
 #-----------------------------------------------------------------------------
 # Last commit info:
 # ----------------------------------
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     import os.path as path
 
     # Add base library to load path
-    dirname, base = path.split(path.dirname(path.realpath(__file__)))
+    dirname, _ = path.split(path.dirname(path.realpath(__file__)))
     sys.path.append(dirname)
 
 from core import XmlFileBase
@@ -60,6 +60,8 @@ PROJECTS_NODES = {
 PROJECTS_ATTRIBS = {"name":"", "version":"", "author":"", "target" :""}
 
 def need_cleanup(func):
+    """Function decorator to automatically disable project output settings.
+    """
     def do_cleanup(project, *args, **kwargs):
         project.clean_up()
         # pylint: disable-msg=W0142
@@ -88,16 +90,16 @@ class ProjectData(object):
                  "instances", "port_list", "entity", "hdl_files", "soc",
                  "clock_list")
     
-    def __init__(self, project, output_dir, hdl_files):
+    def __init__(self, project):
         self.name = project.name
         self.soc = project
-        self.path = output_dir
-        self.components = project._components
-        self.wires = project._wires
-        self.clocks = project._clocks
-        self.externals = project._extern
-        self.instances = project._instances
-        self.hdl_files = hdl_files
+        self.path = ""
+        self.components = {}
+        self.wires = {}
+        self.clocks = {}
+        self.externals = []
+        self.instances = {}
+        self.hdl_files = []
         self.port_list = {}
         self.clock_list = {}
         self.entity = None
@@ -111,13 +113,9 @@ class Project(XmlFileBase):
     xml_basename = "project"
     _config = None
     _filename = None
-    _components = {}
-    _instances = {}
-    _wires = {}
+    _settings = None
     _valid = False
     _errors = {}
-    _clocks = {}
-    _extern = []
 
     @property
     def filename(self):
@@ -135,11 +133,7 @@ class Project(XmlFileBase):
 
     def clean_up(self):
         """Clear all checking results."""
-        self._components = {}
-        self._instances = {}
-        self._wires = {}
-        self._clocks = {}
-        self._extern = []
+        self._settings = None
         self._valid = False
         
     def __init__(self, filename=None):
@@ -250,7 +244,7 @@ class Project(XmlFileBase):
                 raise ProjectError("*** Component called '%s' already exist in current project, component addition canceled.\n" % name)
     
         # Add component instance to current project and retrieve component details
-        (_, properties) = self.components.add(name=name,
+        _, properties = self.components.add(name=name,
                                               base=component.name,
                                               version=component.version)
 
@@ -313,17 +307,18 @@ class Project(XmlFileBase):
             errors["clocks"] = chk_errors 
             self._valid = False
 
-        self._clocks = dict([clock.name.lower(), []] 
+        project = ProjectData(self)
+        project.clocks = dict([clock.name.lower(), []] 
                                 for clock in self.clocks.iteritems()
                            )
 
         # 2. Wires
         #      Verify that at least 1 wire is defined
         wire_errors = []
-        self._wires = dict([wire.name.lower(), ([], [])] 
+        project.wires = dict([wire.name.lower(), ([], [])] 
                                 for wire in self.wires.iteritems()
                            )
-        if not len(self._wires):
+        if not len(project.wires):
             wire_errors.append("*** No wire defined.")
         
         # 3. components
@@ -337,8 +332,8 @@ class Project(XmlFileBase):
         chk_errors = []
         chk_warns = []
         for (cp, cp_attr) in self.components:
-            if self._components.has_key(cp.base):
-                cp_data = self._components[cp.base]
+            if project.components.has_key(cp.base):
+                cp_data = project.components[cp.base]
             else:
                 # New component detected, try to load it
                 cp_data = find_component(component_dir, cp.base)
@@ -352,12 +347,12 @@ class Project(XmlFileBase):
                     self._valid = False
 
                 # Save it for future use
-                self._components[cp.base] = cp_data
+                project.components[cp.base] = cp_data
             
             # Add component instance to list
             generics = cp_attr["generics"].asDict("name","value")
             instance = cp_data.asInstance(name=cp.name, generics=generics)
-            self._instances[cp.name] = instance
+            project.instances[cp.name] = instance
             
             # Verify instance integrity
             if instance.has_errors:
@@ -391,7 +386,7 @@ class Project(XmlFileBase):
                     elif not self.clocks.hasElement(iface.link):
                         chk_errors.append("Component '%s', clock interface '%s' connected to unavailable clock '%s'." % (cp.name, iface.name, iface.link))
                     else:
-                        self._clocks[iface.link.lower()].append(instance.interface(iface.name.lower()))
+                        project.clocks[iface.link.lower()].append(instance.interface(iface.name.lower()))
 
                 elif cpiface[0] == "WBM":
                     if iface.offset:
@@ -402,7 +397,7 @@ class Project(XmlFileBase):
                     elif not self.wires.hasElement(iface.link):
                         chk_errors.append("Component '%s', master interface '%s' connected to unavailable bus/wire '%s'." % (cp.name, iface.name, iface.link))
                     else:
-                        wire = self._wires[iface.link.lower()]
+                        wire = project.wires[iface.link.lower()]
                         wire[0].append(instance.interface(iface.name.lower()))
 
                 elif cpiface[0] == "WBS":
@@ -413,11 +408,11 @@ class Project(XmlFileBase):
                     elif not self.wires.hasElement(iface.link):
                         chk_errors.append("Component '%s', slave interface '%s' connected to unavailable bus/wire '%s'." % (cp.name, iface.name, iface.link))
                     else:
-                        wire = self._wires[iface.link.lower()]
+                        wire = project.wires[iface.link.lower()]
                         wire[1].append(instance.interface(iface.name.lower()))
 
                 elif cpiface[0] == "GLS":
-                    self._extern.append(instance.interface(iface.name.lower()))
+                    project.externals.append(instance.interface(iface.name.lower()))
                 else:
                     chk_errors.append("Component '%s', interface '%s' unknown type '%s'." % (cp.name, iface.name, cpiface[0]))
 
@@ -451,7 +446,7 @@ class Project(XmlFileBase):
             errors["Components"] = chk_errors
             
         # 4. Verify that each wire has at least one master and one slave
-        for w_name, w_iface in self._wires.iteritems():
+        for w_name, w_iface in project.wires.iteritems():
             if len(w_iface[0]) == 0:
                 wire_errors.append("Wire '%s' has no master." % w_name)
             if len(w_iface[1]) == 0:
@@ -462,6 +457,7 @@ class Project(XmlFileBase):
             self._valid = False
             
         self._errors = errors
+        self._settings = project
         return errors
 
     def compile(self, component_dir, output_dir):
@@ -473,7 +469,7 @@ class Project(XmlFileBase):
         """
                 
         # 1. Check design settings if not done before
-        if len(self._components) == 0:
+        if self._settings == None:
             self.check(component_dir)
             
         # 2. Only valid designs can be generated
@@ -481,12 +477,13 @@ class Project(XmlFileBase):
             raise ProjectError("*** Project has errors, compilation canceled.\n")
 
         # 3. Extract HDL files
-        file_names = []
-        for _, cp in self._components.iteritems():
-            file_names.extend(cp.extractHDL(output_dir))
+        project = self._settings
+        project.path = output_dir
+        project.hdl_files = []
+        for _, cp in project.components.iteritems():
+            project.hdl_files.extend(cp.extractHDL(output_dir))
         
         # 4. Create top module for system on chip
-        project = ProjectData(self, output_dir, file_names)
         try:
             make_top(project)
         except TopError, e:
@@ -494,11 +491,11 @@ class Project(XmlFileBase):
         
         # 4: Create compilation project
         
-        # 5: Create simulation module
+        # 5: Create simulation skeleton module
         try:
             tb_file = make_testbench(project)
         except TestbenchError, e:
             raise ProjectError(e.message)
-        file_names.append(tb_file)
-        make_simulation(project, file_names)
+        project.hdl_files.append(tb_file)
+        make_simulation(project)
         

@@ -615,6 +615,11 @@ class Instance(object):
         """
         return self._ifaces[if_name]
     
+    @property
+    def interfaces(self):
+        """Get all interfaces."""
+        return self._ifaces
+    
     def port_width(self, port_name):
         """Get signal width according to instance generic values.
         

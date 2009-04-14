@@ -26,7 +26,7 @@ __copyright__ = "Copyright 2008 Fabrice MOUSSET"
 
 _VHDL_LICENSE_SEP = "\n--                 "
 
-_VHDL_LICENSE = "-"*79
+_VHDL_LICENSE = "-" * 79
 _VHDL_LICENSE += """
 --  Design        :%s
 --  File          : %s.vhd
