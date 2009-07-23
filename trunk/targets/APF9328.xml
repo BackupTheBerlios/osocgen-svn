@@ -1,0 +1,143 @@
+<target name="APF9328" author="Fabrice MOUSSET" version="1.0" vendor="xilinx" device="XC3S200-TQ144-4">
+    <description>Description file for Armadeus APF9328 board, targeting Xilinx FPGA Spartan 3 XC3S200-TQ144-4 (200k gates, speed grade 4 in TQFP 144 package)</description>
+    <clocks>
+        <clock name="clk0" frequency="96000000" loc="P55"/>
+    <clocks>
+    <modules>
+        <module name="imx">
+            <pads>
+                <pad name="address[1]" loc="P23" />
+                <pad name="address[2]" loc="P24" />
+                <pad name="address[3]" loc="P25" />
+                <pad name="address[4]" loc="P26" />
+                <pad name="address[5]" loc="P27" />
+                <pad name="address[6]" loc="P28" />
+                <pad name="address[7]" loc="P30" />
+                <pad name="address[8]" loc="P31" />
+                <pad name="address[9]" loc="P32" />
+                <pad name="address[10]" loc="P33" />
+                <pad name="address[11]" loc="P35" />
+                <pad name="address[12]" loc="P36" />
+                <pad name="cs_n" loc="P59" />
+                <pad name="eb3_n" loc="P60" />
+                <pad name="oe_n" loc="P63" />
+                <pad name="irq" loc="P68" />
+                <pad name="data[0]" loc="P1" />
+                <pad name="data[1]" loc="P2" />
+                <pad name="data[2]" loc="P4" />
+                <pad name="data[3]" loc="P5" />
+                <pad name="data[4]" loc="P6" />
+                <pad name="data[5]" loc="P7" />
+                <pad name="data[6]" loc="P8" />
+                <pad name="data[7]" loc="P10" />
+                <pad name="data[8]" loc="P11" />
+                <pad name="data[9]" loc="P12" />
+                <pad name="data[10]" loc="P13" />
+                <pad name="data[11]" loc="P14" />
+                <pad name="data[12]" loc="P15" />
+                <pad name="data[13]" loc="P17" />
+                <pad name="data[14]" loc="P18" />
+                <pad name="data[15]" loc="P20" />
+            </pads>
+        </module>
+
+        <module name="x1">
+            <pads>
+                <pad name="pin[37]" loc="P40" />
+                <pad name="pin[38]" loc="P44" />
+                <pad name="pin[39]" loc="P47" />
+                <pad name="pin[40]" loc="P51" />
+                <pad name="pin[41]" loc="P53" />
+                <pad name="pin[42]" loc="P73" />
+                <pad name="pin[43]" loc="P76" />
+                <pad name="pin[44]" loc="P78" />
+                <pad name="pin[45]" loc="P80" />
+                <pad name="pin[46]" loc="P83" />
+                <pad name="pin[74]" loc="P84" />
+                <pad name="pin[75]" loc="P82" />
+                <pad name="pin[76]" loc="P79" />
+                <pad name="pin[77]" loc="P77" />
+                <pad name="pin[78]" loc="P74" />
+                <pad name="pin[79]" loc="P56" />
+                <pad name="pin[80]" loc="P52" />
+                <pad name="pin[81]" loc="P50" />
+                <pad name="pin[82]" loc="P46" />
+                <pad name="pin[83]" loc="P41" />
+            </pads>
+        </module>
+
+        <module name="x2">
+            <pads>
+                <pad name="pin[38]" loc="P141" />
+                <pad name="pin[39]" loc="P140" />
+                <pad name="pin[40]" loc="P137" />
+                <pad name="pin[41]" loc="P135" />
+                <pad name="pin[42]" loc="P132" />
+                <pad name="pin[43]" loc="P131" />
+                <pad name="pin[44]" loc="P130" />
+                <pad name="pin[45]" loc="P129" />
+                <pad name="pin[46]" loc="P128" />
+                <pad name="pin[47]" loc="P127" />
+                <pad name="pin[48]" loc="P125" />
+                <pad name="pin[49]" loc="P124" />
+                <pad name="pin[50]" loc="P123" />
+                <pad name="pin[51]" loc="P122" />
+                <pad name="pin[52]" loc="P119" />
+                <pad name="pin[53]" loc="P118" />
+                <pad name="pin[54]" loc="P116" />
+                <pad name="pin[55]" loc="P113" />
+                <pad name="pin[56]" loc="P112" />
+                <pad name="pin[65]" loc="P108" />
+                <pad name="pin[66]" loc="P107" />
+                <pad name="pin[67]" loc="P105" />
+                <pad name="pin[68]" loc="P104" />
+                <pad name="pin[69]" loc="P103" />
+                <pad name="pin[70]" loc="P102" />
+                <pad name="pin[71]" loc="P100" />
+                <pad name="pin[72]" loc="P99" />
+                <pad name="pin[73]" loc="P98" />
+                <pad name="pin[74]" loc="P97" />
+                <pad name="pin[75]" loc="P96" />
+                <pad name="pin[76]" loc="P95" />
+                <pad name="pin[77]" loc="P93" />
+                <pad name="pin[78]" loc="P92" />
+                <pad name="pin[79]" loc="P90" />
+                <pad name="pin[80]" loc="P89" />
+                <pad name="pin[81]" loc="P87" />
+                <pad name="pin[82]" loc="P86" />
+                <pad name="pin[83]" loc="P85" />
+           </pads>
+        </module>
+    </modules>
+    
+    <ips>
+        <ip name="master" type="apf9328">
+            <generics />
+            <exports>
+                <export name="imx_address[12..1]" loc="imx.address[12..1]" />
+                <export name="imx_data[15..0]" loc="imx.data[15..0]" />
+                <export name="imx_cs_n" loc="imx.cs_n" />
+                <export name="imx_oe_n" loc="imx.oe_n" />
+                <export name="imx_eb3_n" loc="imx.eb3_n" />
+            </exports>
+        </ip>
+    </ips>
+</target>
+
+NET "imx_data<0>"  LOC = "P1" | IOSTANDARD = LVCMOS33 ;
+NET "imx_data<1>"  LOC = "P2" | IOSTANDARD = LVCMOS33 ;
+NET "imx_data<2>"  LOC = "P4" | IOSTANDARD = LVCMOS33 ;
+NET "imx_data<3>"  LOC = "P5" | IOSTANDARD = LVCMOS33 ;
+NET "imx_data<4>"  LOC = "P6" | IOSTANDARD = LVCMOS33 ;
+NET "imx_data<5>"  LOC = "P7" | IOSTANDARD = LVCMOS33 ;
+NET "imx_data<6>"  LOC = "P8" | IOSTANDARD = LVCMOS33 ;
+NET "imx_data<7>"  LOC = "P10" | IOSTANDARD = LVCMOS33 ;
+NET "imx_data<8>"  LOC = "P11" | IOSTANDARD = LVCMOS33 ;
+NET "imx_data<9>"  LOC = "P12" | IOSTANDARD = LVCMOS33 ;
+NET "imx_data<10>"  LOC = "P13" | IOSTANDARD = LVCMOS33 ;
+NET "imx_data<11>"  LOC = "P14" | IOSTANDARD = LVCMOS33 ;
+NET "imx_data<12>"  LOC = "P15" | IOSTANDARD = LVCMOS33 ;
+NET "imx_data<13>"  LOC = "P17" | IOSTANDARD = LVCMOS33 ;
+NET "imx_data<14>"  LOC = "P18" | IOSTANDARD = LVCMOS33 ;
+NET "imx_data<15>"  LOC = "P20" | IOSTANDARD = LVCMOS33 ;
+
