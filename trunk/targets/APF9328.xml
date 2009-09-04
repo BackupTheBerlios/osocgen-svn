@@ -1,10 +1,14 @@
-<target name="APF9328" author="Fabrice MOUSSET" version="1.0" vendor="xilinx" device="XC3S200-TQ144-4">
-    <description>Description file for Armadeus APF9328 board, targeting Xilinx FPGA Spartan 3 XC3S200-TQ144-4 (200k gates, speed grade 4 in TQFP 144 package)</description>
+<target name="APF9328" author="Fabrice MOUSSET" version="1.0" vendor="xilinx" family="Spartan3" package="tq144" speed="4" device="xc3s200">
+    <description>Description file for Armadeus APF9328 board, targeting Xilinx FPGA Spartan 3 XC3S200-TQ144-4:
+     * 200k gates, 
+     * speed grade 4
+     * TQFP 144 package
+    </description>
     <clocks>
-        <clock name="clk0" frequency="96000000" loc="P55"/>
-    <clocks>
+        <clock name="clkin" freq="96000000" loc="P55" />
+    </clocks>
     <modules>
-        <module name="imx">
+        <module name="imx" options="IOSTANDARD=LVCMOS33">
             <pads>
                 <pad name="address[1]" loc="P23" />
                 <pad name="address[2]" loc="P24" />
@@ -41,7 +45,7 @@
             </pads>
         </module>
 
-        <module name="x1">
+        <module name="x1" options="IOSTANDARD=LVCMOS33">
             <pads>
                 <pad name="pin[37]" loc="P40" />
                 <pad name="pin[38]" loc="P44" />
@@ -66,7 +70,7 @@
             </pads>
         </module>
 
-        <module name="x2">
+        <module name="x2" options="IOSTANDARD=LVCMOS33">
             <pads>
                 <pad name="pin[38]" loc="P141" />
                 <pad name="pin[39]" loc="P140" />
@@ -123,21 +127,3 @@
         </ip>
     </ips>
 </target>
-
-NET "imx_data<0>"  LOC = "P1" | IOSTANDARD = LVCMOS33 ;
-NET "imx_data<1>"  LOC = "P2" | IOSTANDARD = LVCMOS33 ;
-NET "imx_data<2>"  LOC = "P4" | IOSTANDARD = LVCMOS33 ;
-NET "imx_data<3>"  LOC = "P5" | IOSTANDARD = LVCMOS33 ;
-NET "imx_data<4>"  LOC = "P6" | IOSTANDARD = LVCMOS33 ;
-NET "imx_data<5>"  LOC = "P7" | IOSTANDARD = LVCMOS33 ;
-NET "imx_data<6>"  LOC = "P8" | IOSTANDARD = LVCMOS33 ;
-NET "imx_data<7>"  LOC = "P10" | IOSTANDARD = LVCMOS33 ;
-NET "imx_data<8>"  LOC = "P11" | IOSTANDARD = LVCMOS33 ;
-NET "imx_data<9>"  LOC = "P12" | IOSTANDARD = LVCMOS33 ;
-NET "imx_data<10>"  LOC = "P13" | IOSTANDARD = LVCMOS33 ;
-NET "imx_data<11>"  LOC = "P14" | IOSTANDARD = LVCMOS33 ;
-NET "imx_data<12>"  LOC = "P15" | IOSTANDARD = LVCMOS33 ;
-NET "imx_data<13>"  LOC = "P17" | IOSTANDARD = LVCMOS33 ;
-NET "imx_data<14>"  LOC = "P18" | IOSTANDARD = LVCMOS33 ;
-NET "imx_data<15>"  LOC = "P20" | IOSTANDARD = LVCMOS33 ;
-
