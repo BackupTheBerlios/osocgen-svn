@@ -451,6 +451,8 @@ class ProjectsClockCli(BaseCli):
             self.write("*** Argument error, clock deletion canceled.\n")
             
 class ProjectsCli(BaseCli):
+    multiline_commands = ['description']
+    
     def do_xml(self, arg):
         """\nDisplay XML description from current project or from specified project.
         """
@@ -584,7 +586,7 @@ class ProjectsCli(BaseCli):
         self.write("Project saved as '%s'\n" % name)
 
     def do_version(self, arg):
-        """\nDisplay or modify current component version.
+        """\nDisplay or modify current project version.
         
         version [<string>]
 
@@ -593,11 +595,30 @@ class ProjectsCli(BaseCli):
         if settings.active_project:
             if arg:
                 arg = str(arg).strip()
-                old = settings.active_component.version
-                settings.active_component.version = arg
+                old = settings.active_project.version
+                settings.active_project.version = arg
                 self.write("Version changed from '%s' to '%s'.\n" % (old, arg))
             else:
-                self.write("%s\n" % settings.active_component.version)
+                self.write("%s\n" % settings.active_project.version)
+        else:
+            self.write("*** No open project.\n")
+
+    def do_description(self, arg):
+        """\nDisplay or modify current project description.
+This is a multiline command , to terminate the command the last line must be 
+only a point.
+
+        description [<string>]
+
+            <string> = New description.
+        """
+        if settings.active_project:
+            if arg:
+                arg = str(arg).strip()
+                settings.active_project.description = arg
+                self.write("Description changed.\n")
+            else:
+                self.write("%s\n" % settings.active_project.description)
         else:
             self.write("*** No open project.\n")
 
