@@ -236,6 +236,8 @@ class ComponentsHdlCli(BaseCli):
             self.write("*** Argument error, file selection canceled.\n")
     
 class ComponentsCli(BaseCli):
+    multiline_commands = ['description']
+    
     def do_xml(self, arg):
         """\nDisplay XML description from current component or from specified component.
         """
@@ -410,6 +412,25 @@ class ComponentsCli(BaseCli):
         else:
             self.write("*** No component opened for edition.\n")
 
+    def do_description(self, arg):
+        """\nDisplay or modify current component description.
+This is a multiline command , to terminate the command the last line must be 
+only a point.
+
+        description [<string>]
+
+            <string> = New description.
+        """
+        if settings.active_component:
+            if arg:
+                arg = str(arg).strip()
+                settings.active_component.description = arg
+                self.write("Description changed.\n")
+            else:
+                self.write("%s\n" % settings.active_component.description)
+        else:
+            self.write("*** No open component.\n")
+    
     def do_check(self, arg):
         """\nCheck active component for errors.
         """
