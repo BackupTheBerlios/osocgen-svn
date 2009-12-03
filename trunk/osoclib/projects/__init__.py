@@ -1,2 +1,2 @@
-from projects import Project
+from projects import Project, ProjectError
 from cli import ProjectsCli

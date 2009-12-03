@@ -1,7 +1,7 @@
 #! /usr/bin/python
 # -*- coding: utf-8 -*-
 #-----------------------------------------------------------------------------
-# Name:     protects.py
+# Name:     projects.py
 # Purpose:  Orchestra SoC projects manipulation routines
 #
 # Author:   Fabrice MOUSSET
@@ -480,6 +480,7 @@ class Project(XmlFileBase):
         project = self._settings
         project.path = output_dir
         project.hdl_files = []
+        # pylint: disable-msg=W0621
         for _, cp in project.components.iteritems():
             project.hdl_files.extend(cp.extractHDL(output_dir))
         
