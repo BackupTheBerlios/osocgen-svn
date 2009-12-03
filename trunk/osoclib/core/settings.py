@@ -21,7 +21,7 @@
 #
 #-----------------------------------------------------------------------------
 
-__doc__ = "Session settings and project parameters"
+"Session settings and project parameters"
 __version__ = "1.0.0"
 __versionTime__ = "xx/xx/xxxx"
 __author__ = "Fabrice MOUSSET <fabrice.mousset@laposte.net>"
@@ -53,7 +53,7 @@ class Settings(object):
             self.active_project = None
             self.active_component = None
             self.project_component = None
-            self.active_plateform = None
+            self.active_target = None
 
     def _getDir(self, sub_dir=None):
         """Generate directory name based on project base directory.
@@ -77,9 +77,9 @@ class Settings(object):
         return self._getDir("components")
     
     @property
-    def board_dir(self):
+    def target_dir(self):
         """Return Orchestra Boards base directory."""
-        return self._getDir("boards")
+        return self._getDir("targets")
     
     @property
     def project_dir(self):
