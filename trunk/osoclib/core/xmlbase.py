@@ -21,7 +21,7 @@
 #
 #-----------------------------------------------------------------------------
 
-__doc__ = "Defines classes to manage Orchestra XML files."
+"Defines classes to manage Orchestra XML files."
 __version__ = "1.0.0"
 __versionTime__ = "16/01/2008"
 __author__ = "Fabrice MOUSSET <fabrice.mousset@laposte.net>"
