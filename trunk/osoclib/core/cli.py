@@ -21,20 +21,22 @@
 #
 #-----------------------------------------------------------------------------
 
-__doc__ = "Basic Command Line Interface"
+"Basic Command Line Interface"
 __version__ = "1.0.0"
 __versionTime__ = "xx/xx/xxxx"
 __author__ = "Fabrice MOUSSET <fabrice.mousset@laposte.net>"
 
-import cmd, re, os, sys
+import cmd, re, os
 
 class BaseCli(cmd.Cmd):
     case_insensitive = True
     comment_marks = '#*'
     exclude_from_history = []
     multiline_commands = []
+    continuation_prompt = '> '
     shortcuts = {'?': 'help', '!': 'shell', '@': 'load'}
-    terminators = ';\n'
+    terminators = '\n'
+    multiline_terminator = '.'
     default_extension = 'txt'
 
     def __init__(self, parent=None, *args, **kwargs):
@@ -49,14 +51,12 @@ class BaseCli(cmd.Cmd):
             self.use_rawinput = parent.use_rawinput
 
     def finishStatement(self, firstline):
-        statement = firstline
-        while not self.statementHasEnded(statement):
+        inp = firstline
+        lines = []
+        while not self.statementHasEnded(inp):
+            lines.append(inp)
             inp = self.pseudo_raw_input(self.continuation_prompt)
-            statement = '%s\n%s' % (statement, inp)
-        return statement
-        # assembling a list of lines and joining them at the end would be faster,
-        # but statementHasEnded needs a string arg; anyway, we're getting
-        # user input and users are slow.
+        return '\n'.join(lines)
 
     def write(self, message):
         self.stdout.write(message)
@@ -124,10 +124,8 @@ class BaseCli(cmd.Cmd):
                 except ImportError:
                     pass
 
-    statement_end_pattern = re.compile(r'[%s]\s*$' % terminators)
-    def statementHasEnded(self, lines):
-        return bool(self.statement_end_pattern.search(lines)) \
-               or lines[-3:] == 'EOF'
+    def statementHasEnded(self, line):
+        return line == self.multiline_terminator or line[-3:] == 'EOF'
 
     def clean(self, s):
         """cleans up a string"""
@@ -148,8 +146,8 @@ class BaseCli(cmd.Cmd):
             line = '%s %s' % (shortcut, line[1:])
         i, n = 0, len(line)
         while i < n and line[i] in self.identchars: i = i+1
-        cmd, arg = line[:i], line[i:].strip().strip(self.terminators)
-        return cmd, arg, line
+        command, arg = line[:i], line[i:].strip().strip(self.terminators)
+        return command, arg, line
 
     def onecmd(self, line):
         """Interpret the argument as though it had been typed in response
@@ -175,9 +173,11 @@ class BaseCli(cmd.Cmd):
 
         if self.case_insensitive:
             command = command.lower()
+        
+        if command in self.multiline_commands and len(args) > 0:
+            args = self.finishStatement(args)
         statement = ' '.join([command, args])
-        if command in self.multiline_commands:
-            statement = self.finishStatement(statement)
+        
         stop = cmd.Cmd.onecmd(self, statement)
         try:
             command = statement.split(None,1)[0].lower()
