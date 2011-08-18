@@ -1,10 +1,10 @@
-# dvdegvzdfgzdfzedde
-components.create name=toto
-#components.hdl.add name=temp/syscon.vhd -istop
-components.hdl.add name=temp/imx_wrapper.vhd -istop
+components.create name=apf9328
+components.hdl.add name=temp/apf9328_bridge.vhd -istop
+components.hdl.add name=temp/apf9328_tb_pkg.vhd scope=testbench
 #components.xml
 #components.hdl.del imx_wrapper.vhd
 #components.xml
 #components.hdl.add name=temp/imx_wrapper.vhd
 components.xml
-components.save name=bob --force
+components.check
+components.save name=apf9328

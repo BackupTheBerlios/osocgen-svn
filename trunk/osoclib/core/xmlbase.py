@@ -1,6 +1,6 @@
 #! /usr/bin/python
 # -*- coding: utf-8 -*-
-#-----------------------------------------------------------------------------
+#=============================================================================
 # Name:     xml.py
 # Purpose:  XML file
 #
@@ -8,18 +8,18 @@
 #
 # Created:  2008/01/16
 # Licence:  GPLv3 or newer
-#-----------------------------------------------------------------------------
+#=============================================================================
 # Last commit info:
-# ----------------------------------
+#
 # $LastChangedDate:: xxxx/xx/xx xx:xx:xx $
 # $Rev::                                 $
 # $Author::                              $
-#-----------------------------------------------------------------------------
+#=============================================================================
 # Revision list :
 #
 # Date       By        Changes
 #
-#-----------------------------------------------------------------------------
+#=============================================================================
 
 "Defines classes to manage Orchestra XML files."
 __version__ = "1.0.0"
@@ -34,6 +34,7 @@ if __name__ == "__main__":
     sys.path.append(dirname)
 
 import thirdparty.ElementTree as ET
+import bisect
 
 def xml_beautifier(xml_data):
     """This function make XML output looks better and more human readable.
@@ -175,7 +176,6 @@ class ItemBase(object):
         # No direct access to private members ;-)
         if name.startswith('_'):
             return
-		
         # Don't add undefined keys
         if value is None:
             # Remove undefined keys if they exist

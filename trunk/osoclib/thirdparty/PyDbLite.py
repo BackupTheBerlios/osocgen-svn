@@ -49,12 +49,15 @@ version 2.2 : add __contains__
 
 version 2.3 : introduce syntax (db('name')>'f') & (db('age') == 30)
 
-version 2.4 : 
+version 2.4 :
 - add BSD Licence
 - raise exception if unknown fields in insert
+
+version 2.5 :
+- add memory only mode (no disk access)
 """
 
-version = "2.4"
+version = "2.5"
 
 import os
 import cPickle
@@ -147,7 +150,7 @@ class Tester:
 
 class Base:
 
-    def __init__(self,basename,protocol=cPickle.HIGHEST_PROTOCOL):
+    def __init__(self,basename=None,protocol=cPickle.HIGHEST_PROTOCOL):
         """protocol as defined in pickle / cPickle
         Defaults to the highest protocol available
         For maximum compatibility use protocol = 0"""
@@ -162,15 +165,16 @@ class Base:
         - if mode = 'override' : erase the existing base and create a
         new one with the specified fields"""
         self.mode = mode = kw.get("mode",None)
-        if os.path.exists(self.name):
-            if not os.path.isfile(self.name):
-                raise IOError,"%s exists and is not a file" %self.name
-            elif mode is None:
-                raise IOError,"Base %s already exists" %self.name
-            elif mode == "open":
-                return self.open()
-            elif mode == "override":
-                os.remove(self.name)
+        if self.name:
+            if os.path.exists(self.name):
+                if not os.path.isfile(self.name):
+                    raise IOError,"%s exists and is not a file" %self.name
+                elif mode is None:
+                    raise IOError,"Base %s already exists" %self.name
+                elif mode == "open":
+                    return self.open()
+                elif mode == "override":
+                    os.remove(self.name)
         self.fields = list(fields)
         self.records = {}
         self.next_id = 0
@@ -219,6 +223,10 @@ class Base:
 
     def open(self):
         """Open an existing database and load its content into memory"""
+        
+        if not self.name:
+            raise IOError,"Base has no name, unable to open!"
+
         # guess protocol
         if self.protocol==0:
             _in = open(self.name) # don't specify binary mode !
@@ -236,6 +244,8 @@ class Base:
 
     def commit(self):
         """Write the database to a file"""
+        if not self.name:
+            raise IOError,"Base has no name, unable to save!"
         out = open(self.name,'wb')
         cPickle.dump(self.fields,out,self.protocol)
         cPickle.dump(self.next_id,out,self.protocol)
